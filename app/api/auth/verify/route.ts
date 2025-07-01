@@ -1,0 +1,33 @@
+import { NextResponse } from 'next/server'
+import { verifySession } from '@/lib/session'
+
+export async function GET() {
+  try {
+    const session = await verifySession()
+    
+    if (session) {
+      return NextResponse.json(
+        { 
+          success: true, 
+          authenticated: true,
+          user: { 
+            userId: session.userId, 
+            username: session.username,
+            role: session.role
+          }
+        },
+        { status: 200 }
+      )
+    } else {
+      return NextResponse.json(
+        { success: true, authenticated: false },
+        { status: 200 }
+      )
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
