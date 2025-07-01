@@ -14,7 +14,7 @@ const AgenticChat: React.FC = () => {
         <CopilotKit
             runtimeUrl="/api/copilotkit"
             showDevConsole={false}
-            agent="meeting-agent"
+            agent={process.env.NEXT_PUBLIC_COPILOTKIT_AGENT_NAME || ""}
         >
             <Chat />
         </CopilotKit>
