@@ -6,10 +6,11 @@ export async function GET() {
     const session = await verifySession()
     
     if (session) {
+      console.log('Session verified:', session)
       return NextResponse.json(
         { 
           success: true, 
-          authenticated: true,
+          authenticated: session.isValid,
           user: { 
             userId: session.userId, 
             username: session.username,

@@ -6,9 +6,19 @@
       "password": "$2b$10$Y8xep2R40vRMbKa0i17K.uqRCADLMVXfc0/uRE.5jqadI7xyDnrKe",
       "role": "admin",
       "createdAt": "2025-07-01T05:19:47.958Z",
-      "updatedAt": "2025-07-02T08:18:58.708Z",
-      "langgr_url": "https://monitors-houses-dance-french.trycloudflare.com",
-      "agent_name": "meeting-agent"
+      "updatedAt": "2025-07-02T08:44:35.714Z",
+      "langgr_url": null,
+      "agent_name": null
+    },
+    {
+      "id": "user-1751445823360-ar1tfnp65",
+      "username": "asdsad",
+      "password": "$2b$10$C711FlyYxGKUFhQ3Ja0OKeRunC9j47qPw/RA2vn8PhhUP8LZwYr06",
+      "role": "user",
+      "langgr_url": null,
+      "agent_name": null,
+      "createdAt": "2025-07-02T08:43:43.360Z",
+      "updatedAt": "2025-07-02T08:43:43.360Z"
     }
   ]
 }
