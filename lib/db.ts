@@ -7,6 +7,8 @@ export interface User {
   username: string
   password: string
   role: 'admin' | 'user'
+  langgr_url: string | null
+  agent_name: string | null
   createdAt: string
   updatedAt: string
 }
@@ -30,6 +32,8 @@ export async function initDB() {
       username: 'admin',
       password: hashedPassword,
       role: 'admin',
+      langgr_url: null,
+      agent_name: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })
@@ -61,6 +65,8 @@ export async function createUser(username: string, password: string, role: 'admi
     username,
     password: hashedPassword,
     role,
+    langgr_url: null,
+    agent_name: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
@@ -82,6 +88,22 @@ export async function updateUserPassword(userId: string, newPassword: string): P
 
   const hashedPassword = await bcrypt.hash(newPassword, 10)
   db.data.users[userIndex].password = hashedPassword
+  db.data.users[userIndex].updatedAt = new Date().toISOString()
+  
+  await db.write()
+  return true
+}
+
+export async function updateUserAgentConfig(userId: string, langgr_url: string | null, agent_name: string | null): Promise<boolean> {
+  await db.read()
+  
+  const userIndex = db.data.users.findIndex(user => user.id === userId)
+  if (userIndex === -1) {
+    return false
+  }
+
+  db.data.users[userIndex].langgr_url = langgr_url
+  db.data.users[userIndex].agent_name = agent_name
   db.data.users[userIndex].updatedAt = new Date().toISOString()
   
   await db.write()

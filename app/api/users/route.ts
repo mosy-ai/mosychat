@@ -110,3 +110,45 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await verifySession()
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    await initDB()
+    const { userId, langgr_url, agent_name } = await request.json()
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'User ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const { updateUserAgentConfig } = await import('@/lib/db')
+    const success = await updateUserAgentConfig(userId, langgr_url, agent_name)
+    
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      )
+    }
+    
+    return NextResponse.json(
+      { success: true, message: 'Agent configuration updated successfully' },
+      { status: 200 }
+    )
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

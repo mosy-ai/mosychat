@@ -9,6 +9,8 @@ export interface SessionPayload extends JWTPayload {
   userId: string
   username: string
   role: 'admin' | 'user'
+  langgr_url?: string | null
+  agent_name?: string | null
   expiresAt: Date
 }
 
@@ -38,7 +40,7 @@ export async function decrypt(session: string | undefined = '') {
 
 export async function createSession(userId: string, username: string, role: 'admin' | 'user') {
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-  const session = await encrypt({ userId, username, role, expiresAt })
+  const session = await encrypt({ userId, username, role, expiresAt, langgr_url: null, agent_name: null })
 
   const cookieStore = await cookies()
   cookieStore.set('session', session, {
@@ -56,10 +58,60 @@ export async function verifySession() {
   const session = await decrypt(cookie)
 
   if (!session?.userId) {
-    return null
+    return {
+      isValid: false,
+      error: 'No valid session found',
+      userId: null,
+      username: null,
+      role: null,
+      langgr_url: null,
+      agent_name: null,
+      sessionExpiry: null
+    }
   }
 
-  return { userId: session.userId, username: session.username, role: session.role }
+  try {
+    // Get fresh user data from database to ensure latest agent config
+    const { findUserById } = await import('./db')
+    const user = await findUserById(session.userId)
+    
+    if (!user) {
+      return {
+        isValid: false,
+        error: 'User not found in database',
+        userId: session.userId,
+        username: session.username,
+        role: session.role,
+        langgr_url: null,
+        agent_name: null,
+        sessionExpiry: session.expiresAt
+      }
+    }
+
+    return { 
+      isValid: true,
+      error: null,
+      userId: session.userId, 
+      username: session.username, 
+      role: session.role, 
+      langgr_url: user.langgr_url, 
+      agent_name: user.agent_name,
+      sessionExpiry: session.expiresAt,
+      userLastUpdated: user.updated_at || null
+    }
+  } catch (dbError) {
+    console.error('Database error during session verification:', dbError)
+    return {
+      isValid: false,
+      error: `Database connection failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
+      userId: session.userId,
+      username: session.username,
+      role: session.role,
+      langgr_url: null,
+      agent_name: null,
+      sessionExpiry: session.expiresAt
+    }
+  }
 }
 
 export async function deleteSession() {
@@ -72,8 +124,58 @@ export async function verifySessionFromRequest(request: NextRequest) {
   const session = await decrypt(cookie)
 
   if (!session?.userId) {
-    return null
+    return {
+      isValid: false,
+      error: 'No valid session found',
+      userId: null,
+      username: null,
+      role: null,
+      langgr_url: null,
+      agent_name: null,
+      sessionExpiry: null
+    }
   }
 
-  return { userId: session.userId, username: session.username, role: session.role }
+  try {
+    // Get fresh user data from database to ensure latest agent config
+    const { findUserById } = await import('./db')
+    const user = await findUserById(session.userId)
+    
+    if (!user) {
+      return {
+        isValid: false,
+        error: 'User not found in database',
+        userId: session.userId,
+        username: session.username,
+        role: session.role,
+        langgr_url: null,
+        agent_name: null,
+        sessionExpiry: session.expiresAt
+      }
+    }
+
+    return { 
+      isValid: true,
+      error: null,
+      userId: session.userId, 
+      username: session.username, 
+      role: session.role, 
+      langgr_url: user.langgr_url, 
+      agent_name: user.agent_name,
+      sessionExpiry: session.expiresAt,
+      userLastUpdated: user.updated_at || null
+    }
+  } catch (dbError) {
+    console.error('Database error during session verification:', dbError)
+    return {
+      isValid: false,
+      error: `Database connection failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
+      userId: session.userId,
+      username: session.username,
+      role: session.role,
+      langgr_url: null,
+      agent_name: null,
+      sessionExpiry: session.expiresAt
+    }
+  }
 }

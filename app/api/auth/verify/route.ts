@@ -13,7 +13,9 @@ export async function GET() {
           user: { 
             userId: session.userId, 
             username: session.username,
-            role: session.role
+            role: session.role,
+            langgr_url: session.langgr_url || null,
+            agent_name: session.agent_name || null
           }
         },
         { status: 200 }

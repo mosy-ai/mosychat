@@ -7,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Settings } from 'lucide-react'
 
 interface User {
   id: string
   username: string
   role: string
+  langgr_url: string | null
+  agent_name: string | null
   createdAt: string
 }
 
@@ -20,10 +22,15 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showAgentConfig, setShowAgentConfig] = useState<string | null>(null)
   const [newUser, setNewUser] = useState({
     username: '',
     password: '',
     role: 'user'
+  })
+  const [agentConfig, setAgentConfig] = useState({
+    langgr_url: '',
+    agent_name: ''
   })
   const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null)
 
@@ -128,6 +135,40 @@ export default function AdminPanel() {
     }
   }
 
+  const updateAgentConfig = async (userId: string) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          langgr_url: agentConfig.langgr_url || null,
+          agent_name: agentConfig.agent_name || null
+        })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        alert('Agent configuration updated successfully!')
+        setShowAgentConfig(null)
+        setAgentConfig({ langgr_url: '', agent_name: '' })
+        loadUsers()
+      } else {
+        alert(data.error || 'Failed to update agent configuration')
+      }
+    } catch (error) {
+      alert('Error updating agent configuration')
+    }
+  }
+
+  const openAgentConfig = (user: User) => {
+    setAgentConfig({
+      langgr_url: user.langgr_url || '',
+      agent_name: user.agent_name || ''
+    })
+    setShowAgentConfig(user.id)
+  }
+
   if (loading) {
     return (
       <DashboardLayout requireAdmin>
@@ -193,6 +234,38 @@ export default function AdminPanel() {
               </Card>
             )}
 
+            {showAgentConfig && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configure Agent Settings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Input
+                      type="text"
+                      placeholder="LangGraph Deployment URL"
+                      value={agentConfig.langgr_url}
+                      onChange={(e) => setAgentConfig({...agentConfig, langgr_url: e.target.value})}
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Agent Name"
+                      value={agentConfig.agent_name}
+                      onChange={(e) => setAgentConfig({...agentConfig, agent_name: e.target.value})}
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={() => updateAgentConfig(showAgentConfig)}>
+                        Update Configuration
+                      </Button>
+                      <Button type="button" variant="outline" onClick={() => setShowAgentConfig(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div>
               <h2 className="text-xl font-semibold mb-4">User Management</h2>
               <Card>
@@ -201,6 +274,8 @@ export default function AdminPanel() {
                     <TableRow>
                       <TableHead>Username</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Agent URL</TableHead>
+                      <TableHead>Agent Name</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -214,9 +289,21 @@ export default function AdminPanel() {
                             {user.role}
                           </span>
                         </TableCell>
+                        <TableCell className="max-w-32 truncate" title={user.langgr_url || 'Not set'}>
+                          {user.langgr_url ? user.langgr_url.substring(0, 30) + '...' : 'Not set'}
+                        </TableCell>
+                        <TableCell>{user.agent_name || 'Not set'}</TableCell>
                         <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
+                            <Button
+                              onClick={() => openAgentConfig(user)}
+                              variant="outline"
+                              size="sm"
+                              title="Configure agent"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </Button>
                             <Button
                               onClick={() => resetUserPassword(user.id)}
                               variant="link"

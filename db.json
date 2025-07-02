@@ -6,7 +6,9 @@
       "password": "$2b$10$Y8xep2R40vRMbKa0i17K.uqRCADLMVXfc0/uRE.5jqadI7xyDnrKe",
       "role": "admin",
       "createdAt": "2025-07-01T05:19:47.958Z",
-      "updatedAt": "2025-07-01T05:19:47.958Z"
+      "updatedAt": "2025-07-02T08:18:58.708Z",
+      "langgr_url": "https://monitors-houses-dance-french.trycloudflare.com",
+      "agent_name": "meeting-agent"
     }
   ]
 }
