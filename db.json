@@ -11,14 +11,14 @@
       "agent_name": null
     },
     {
-      "id": "user-1751445823360-ar1tfnp65",
-      "username": "asdsad",
-      "password": "$2b$10$C711FlyYxGKUFhQ3Ja0OKeRunC9j47qPw/RA2vn8PhhUP8LZwYr06",
+      "id": "user-1751455483273-y804k1vyw",
+      "username": "test",
+      "password": "$2b$10$NVxkKiLNQ2CH1KSSWvwNYedkwJa5hAtnckmnJL/cmTRfZQD4zeNdS",
       "role": "user",
       "langgr_url": null,
       "agent_name": null,
-      "createdAt": "2025-07-02T08:43:43.360Z",
-      "updatedAt": "2025-07-02T08:43:43.360Z"
+      "createdAt": "2025-07-02T11:24:43.273Z",
+      "updatedAt": "2025-07-02T11:24:43.273Z"
     }
   ]
 }

@@ -120,6 +120,7 @@ export default function KnowledgeBasePage() {
 
   return (
     <DashboardLayout>
+     {user?.role === 'admin' ? (
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -267,7 +268,17 @@ export default function KnowledgeBasePage() {
             </DialogContent>
           </Dialog>
         )}
-      </div>
+      </div>) : (
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Alert >
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              You do not have permission to manage knowledge bases. Please contact an administrator.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
     </DashboardLayout>
   );
 }

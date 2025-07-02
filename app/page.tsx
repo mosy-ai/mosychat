@@ -42,7 +42,9 @@ export default function Home() {
           </CardHeader>
           <CardContent className="space-y-4">
             {loading ? (
-              <div className="text-center">Loading...</div>
+              <Button asChild className="w-full px-16">
+                <Link href="/login">Loading ...</Link>
+              </Button>
             ) : user ? (
               <div className="space-y-4">
                 <Alert>
