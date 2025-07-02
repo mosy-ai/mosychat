@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify, JWTPayload } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
 
-const secretKey = process.env.SESSION_SECRET || 'your-secret-key-change-this-in-production'
+const secretKey = process.env.SESSION_SECRET
 const encodedKey = new TextEncoder().encode(secretKey)
 
 export interface SessionPayload extends JWTPayload {
@@ -22,12 +22,16 @@ export async function encrypt(payload: SessionPayload) {
 
 export async function decrypt(session: string | undefined = '') {
   try {
+    if (!session || typeof session !== 'string' || session.split('.').length !== 3) {
+      return null
+    }
+
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ['HS256'],
     })
     return payload as SessionPayload
   } catch (error) {
-    console.log('Failed to verify session')
+    // Silently handle JWT verification errors - invalid tokens are expected
     return null
   }
 }

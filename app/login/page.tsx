@@ -84,11 +84,6 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
-          <div className="mt-6 text-center">
-            <CardDescription>Demo credentials:</CardDescription>
-            <CardDescription>Username: admin</CardDescription>
-            <CardDescription>Password: pass_for_admin_123</CardDescription>
-          </div>
         </CardContent>
       </Card>
     </div>
