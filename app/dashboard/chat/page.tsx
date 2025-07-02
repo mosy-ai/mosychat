@@ -1,30 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CopilotChat, CopilotKitCSSProperties, useCopilotChatSuggestions } from "@copilotkit/react-ui";
-import { CopilotKit, useCopilotAction } from "@copilotkit/react-core";
+import { CopilotChat } from "@copilotkit/react-ui";
+import { CopilotKit } from "@copilotkit/react-core";
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MessageSquare, Bot } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import "@copilotkit/react-ui/styles.css";
 
 const AgenticChat: React.FC = () => {
-    return (
-        <CopilotKit
-            runtimeUrl="/api/copilotkit"
-            showDevConsole={false}
-            agent={process.env.NEXT_PUBLIC_COPILOTKIT_AGENT_NAME || ""}
-        >
-            <Chat />
-        </CopilotKit>
-    );
-};
-
-const Chat = () => {
-    const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+    const [user, setUser] = useState<{ id: string; username: string; role: string } | null>(null);
     const [loading, setLoading] = useState(true);
-    const [background, setBackground] = useState<string>("#fefefe");
 
     useEffect(() => {
         const getUser = async () => {
@@ -43,7 +29,6 @@ const Chat = () => {
         getUser();
     }, []);
 
-
     if (loading) {
         return (
             <div className="text-center">
@@ -52,6 +37,25 @@ const Chat = () => {
             </div>
         );
     }
+
+    if (!user) {
+        return <div>User not authenticated</div>;
+    }
+
+    return (
+        <CopilotKit
+            runtimeUrl="/api/copilotkit"
+            showDevConsole={false}
+            agent={process.env.NEXT_PUBLIC_COPILOTKIT_AGENT_NAME || ""}
+            headers={{ "x-user-id": user.username }}
+        >
+            <Chat user={user} />
+        </CopilotKit>
+    );
+};
+
+const Chat = ({ user }: { user: { id: string; username: string; role: string } }) => {
+    const [background, setBackground] = useState<string>("#fefefe");
 
     return (
         <div
@@ -69,6 +73,7 @@ const Chat = () => {
                 </CardHeader>
                 <CardContent className="h-full pb-6">
                 <CopilotChat
+                    // add user identifier to the chat
                     className="h-full w-full rounded-lg"
                     labels={{
                     placeholder: "Type your message here...",
