@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { SignJWT, jwtVerify, JWTPayload } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
@@ -71,33 +73,48 @@ export async function verifySession() {
   }
 
   try {
-    // Get fresh user data from database to ensure latest agent config
-    const { findUserById } = await import('./db')
-    const user = await findUserById(session.userId)
-    
-    if (!user) {
-      return {
-        isValid: false,
-        error: 'User not found in database',
-        userId: session.userId,
-        username: session.username,
-        role: session.role,
-        langgr_url: null,
-        agent_name: null,
-        sessionExpiry: session.expiresAt
+    // Only import database module on server side
+    if (typeof window === 'undefined') {
+      const { findUserById } = await import('./db')
+      const user = await findUserById(session.userId)
+      
+      if (!user) {
+        return {
+          isValid: false,
+          error: 'User not found in database',
+          userId: session.userId,
+          username: session.username,
+          role: session.role,
+          langgr_url: null,
+          agent_name: null,
+          sessionExpiry: session.expiresAt
+        }
       }
-    }
 
-    return { 
-      isValid: true,
-      error: null,
-      userId: session.userId, 
-      username: session.username, 
-      role: session.role, 
-      langgr_url: user.langgr_url, 
-      agent_name: user.agent_name,
-      sessionExpiry: session.expiresAt,
-      userLastUpdated: user.updated_at || null
+      return { 
+        isValid: true,
+        error: null,
+        userId: session.userId, 
+        username: session.username, 
+        role: session.role, 
+        langgr_url: user.langgr_url, 
+        agent_name: user.agent_name,
+        sessionExpiry: session.expiresAt,
+        userLastUpdated: user.updatedAt || null
+      }
+    } else {
+      // Client side - return session data without database lookup
+      return { 
+        isValid: true,
+        error: null,
+        userId: session.userId, 
+        username: session.username, 
+        role: session.role, 
+        langgr_url: session.langgr_url || null, 
+        agent_name: session.agent_name || null,
+        sessionExpiry: session.expiresAt,
+        userLastUpdated: null
+      }
     }
   } catch (dbError) {
     console.error('Database error during session verification:', dbError)
@@ -137,33 +154,49 @@ export async function verifySessionFromRequest(request: NextRequest) {
   }
 
   try {
-    // Get fresh user data from database to ensure latest agent config
-    const { findUserById } = await import('./db')
-    const user = await findUserById(session.userId)
-    
-    if (!user) {
-      return {
-        isValid: false,
-        error: 'User not found in database',
-        userId: session.userId,
-        username: session.username,
-        role: session.role,
-        langgr_url: null,
-        agent_name: null,
-        sessionExpiry: session.expiresAt
+    // Only import database module on server side
+    if (typeof window === 'undefined') {
+      // Get fresh user data from database to ensure latest agent config
+      const { findUserById } = await import('./db')
+      const user = await findUserById(session.userId)
+      
+      if (!user) {
+        return {
+          isValid: false,
+          error: 'User not found in database',
+          userId: session.userId,
+          username: session.username,
+          role: session.role,
+          langgr_url: null,
+          agent_name: null,
+          sessionExpiry: session.expiresAt
+        }
       }
-    }
 
-    return { 
-      isValid: true,
-      error: null,
-      userId: session.userId, 
-      username: session.username, 
-      role: session.role, 
-      langgr_url: user.langgr_url, 
-      agent_name: user.agent_name,
-      sessionExpiry: session.expiresAt,
-      userLastUpdated: user.updated_at || null
+      return { 
+        isValid: true,
+        error: null,
+        userId: session.userId, 
+        username: session.username, 
+        role: session.role, 
+        langgr_url: user.langgr_url, 
+        agent_name: user.agent_name,
+        sessionExpiry: session.expiresAt,
+        userLastUpdated: user.updatedAt || null
+      }
+    } else {
+      // Client side - return session data without database lookup
+      return { 
+        isValid: true,
+        error: null,
+        userId: session.userId, 
+        username: session.username, 
+        role: session.role, 
+        langgr_url: session.langgr_url || null, 
+        agent_name: session.agent_name || null,
+        sessionExpiry: session.expiresAt,
+        userLastUpdated: null
+      }
     }
   } catch (dbError) {
     console.error('Database error during session verification:', dbError)

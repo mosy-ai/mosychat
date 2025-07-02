@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // User changing their own password
-      const user = await findUserById(session.userId)
+      const user = await findUserById(session.userId || '')
       if (!user) {
         return NextResponse.json(
           { success: false, error: 'User not found' },
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      await updateUserPassword(session.userId, newPassword)
+      await updateUserPassword(session.userId || '', newPassword)
     }
     
     return NextResponse.json(

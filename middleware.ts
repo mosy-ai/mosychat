@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySessionFromRequest } from '@/lib/session'
+import { decrypt } from '@/lib/session'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check if the route requires authentication
   if (pathname.startsWith('/dashboard')) {
-    const session = await verifySessionFromRequest(request)
+    const cookie = request.cookies.get('session')?.value
+    const session = await decrypt(cookie)
     
-    if (!session) {
+    if (!session?.userId) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
