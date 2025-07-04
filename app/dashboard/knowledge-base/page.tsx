@@ -8,19 +8,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DashboardLayout } from '@/components/dashboard-layout';
-import { kbApi, KnowledgeBase, KnowledgeBaseCreateDto } from '@/lib/kb-api';
+import { apiClient, KnowledgeBase, CreateKnowledgeBaseRequest, UpdateKnowledgeBaseRequest, UserResponse } from '@/lib/api-client';
+import { verifyAndGetMe } from '@/lib/custom-func';
 import Link from 'next/link';
 import { Trash2, Edit, Plus, FileText, AlertCircle } from 'lucide-react';
 
 export default function KnowledgeBasePage() {
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingKB, setEditingKB] = useState<KnowledgeBase | null>(null);
-  const [formData, setFormData] = useState<KnowledgeBaseCreateDto>({
+  const [formData, setFormData] = useState<{ name: string; user_ids?: string[] | null; description?: string }>({
     name: '',
+    user_ids: null,
     description: ''
   });
 
@@ -31,21 +33,16 @@ export default function KnowledgeBasePage() {
   const loadUserAndKnowledgeBases = async () => {
     setError(null);
     try {
-      // Get user info
-      const userResponse = await fetch('/api/auth/verify');
-      const userData = await userResponse.json();
-      if (userData.success && userData.authenticated) {
-        setUser(userData.user);
-      } else {
-        throw new Error('User not authenticated');
-      }
+      // Get user info using the custom function
+      const userData = await verifyAndGetMe();
+      setUser(userData);
 
       // Load knowledge bases with timeout
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 10000)
       );
       
-      const kbPromise = kbApi.listKnowledgeBases();
+      const kbPromise = apiClient.listKnowledgeBases();
       
       const response = await Promise.race([kbPromise, timeoutPromise]) as any;
       setKnowledgeBases(response.data || []);
@@ -60,7 +57,11 @@ export default function KnowledgeBasePage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await kbApi.createKnowledgeBase(formData);
+      const createData: CreateKnowledgeBaseRequest = {
+        name: formData.name,
+        user_ids: formData.user_ids
+      };
+      await apiClient.createKnowledgeBase(createData);
       setShowCreateDialog(false);
       setFormData({ name: '', description: '' });
       await loadUserAndKnowledgeBases();
@@ -76,7 +77,11 @@ export default function KnowledgeBasePage() {
     if (!editingKB) return;
     
     try {
-      await kbApi.updateKnowledgeBase(editingKB.id, formData);
+      const updateData: UpdateKnowledgeBaseRequest = {
+        name: formData.name,
+        user_ids: formData.user_ids
+      };
+      await apiClient.updateKnowledgeBase(editingKB.id, updateData);
       setEditingKB(null);
       setFormData({ name: '', description: '' });
       await loadUserAndKnowledgeBases();
@@ -91,7 +96,7 @@ export default function KnowledgeBasePage() {
     if (!confirm('Are you sure you want to delete this knowledge base?')) return;
     
     try {
-      await kbApi.deleteKnowledgeBase(id);
+      await apiClient.deleteKnowledgeBase(id);
       await loadUserAndKnowledgeBases();
       alert('Knowledge base deleted successfully!');
     } catch (error) {
@@ -102,10 +107,10 @@ export default function KnowledgeBasePage() {
 
   const startEdit = (kb: KnowledgeBase) => {
     setEditingKB(kb);
-    setFormData({ name: kb.name, description: kb.description || '' });
+    setFormData({ name: kb.name, description: '' });
   };
 
-  const canModifyKB = user?.role === 'admin';
+  const canModifyKB = user?.role === 'ADMIN';
 
   if (loading) {
     return (
@@ -120,13 +125,13 @@ export default function KnowledgeBasePage() {
 
   return (
     <DashboardLayout>
-     {user?.role === 'admin' ? (
+     {user?.role === 'ADMIN' ? (
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Knowledge Base</h1>
             <p className="text-muted-foreground">
-              {user?.role === 'admin' 
+              {user?.role === 'ADMIN' 
                 ? 'Create and manage knowledge bases and their documents' 
                 : 'Access knowledge bases and manage documents'}
             </p>
@@ -149,11 +154,6 @@ export default function KnowledgeBasePage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
-                  />
-                  <Textarea
-                    placeholder="Description (optional)"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
                   <div className="flex gap-2">
                     <Button type="submit">Create</Button>
@@ -223,7 +223,7 @@ export default function KnowledgeBasePage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {kb.description || 'No description provided'}
+                    Created at: {new Date(kb.created_at).toLocaleDateString()}
                   </p>
                   <p className="text-xs text-muted-foreground mb-3">
                     ID: {kb.id.substring(0, 8)}...
@@ -252,11 +252,6 @@ export default function KnowledgeBasePage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                />
-                <Textarea
-                  placeholder="Description (optional)"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
                 <div className="flex gap-2">
                   <Button type="submit">Update</Button>

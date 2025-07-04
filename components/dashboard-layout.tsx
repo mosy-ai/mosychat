@@ -12,11 +12,8 @@ import {
   LogOut,
   Bot,
 } from "lucide-react";
-
-interface User {
-  username: string;
-  role: string;
-}
+import { UserResponse } from "@/lib/api-client";
+import { verifyAndGetMe } from "@/lib/custom-func";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -27,28 +24,28 @@ export function DashboardLayout({
   children,
   requireAdmin = false,
 }: DashboardLayoutProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch("/api/auth/verify");
-        const data = await response.json();
-
-        if (!data.success || !data.authenticated) {
-          router.push("/login");
-          return;
+        const currentUser = await verifyAndGetMe();
+        if (!currentUser) {
+          throw new Error("User not found");
         }
 
-        if (requireAdmin && data.user.role !== "admin") {
+        setUser(currentUser);
+
+        // Redirect if admin access is required and user is not an admin
+        if (requireAdmin && currentUser.role !== "ADMIN") {
           router.push("/dashboard");
           return;
         }
 
-        setUser(data.user);
-      } catch (error) {
+        // Redirect to login if user is not authenticated
+      } catch (error) { 
         console.error("Auth check failed:", error);
         router.push("/login");
       } finally {
@@ -61,7 +58,7 @@ export function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      document.cookie = '';
       router.push("/");
       router.refresh();
     } catch (error) {
@@ -105,7 +102,7 @@ export function DashboardLayout({
                     AI Chat
                   </Button>
                 </Link>
-                {user?.role === "admin" && (
+                {user?.role === "ADMIN" && (
                   <>
                     <Link href="/dashboard/admin/users">
                       <Button variant="ghost" size="sm">
@@ -128,7 +125,7 @@ export function DashboardLayout({
               {user && (
                 <>
                   <span className="text-sm text-muted-foreground">
-                    {user.username} ({user.role})
+                    {user.name} ({user.role})
                   </span>
                   <Button onClick={handleLogout} variant="outline" size="sm">
                     <LogOut className="w-4 h-4 mr-2" />

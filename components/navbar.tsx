@@ -5,14 +5,12 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Settings, LogOut, User, Home, FileText, Users, Brain, MessageSquare } from 'lucide-react'
+import { LogOut, User, Home, FileText, Users, Brain, MessageSquare } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { UserResponse } from '@/lib/api-client'
 
 interface NavbarProps {
-  user?: {
-    username: string
-    role: string
-  } | null
+  user?: UserResponse | null
 }
 
 export function Navbar({ user }: NavbarProps) {
@@ -63,7 +61,7 @@ export function Navbar({ user }: NavbarProps) {
                   </Button>
                 </Link>
                 
-                {user.role !== 'admin' && (
+                {user.role !== 'ADMIN' && (
                   <Link href="/dashboard/knowledge-base">
                     <Button variant={isActive('/dashboard/knowledge-base') ? 'default' : 'ghost'} size="sm">
                       <FileText className="w-4 h-4 mr-2" />
@@ -72,7 +70,7 @@ export function Navbar({ user }: NavbarProps) {
                   </Link>
                 )}
                 
-                {user.role === 'admin' && (
+                {user.role === 'ADMIN' && (
                   <>
                     <Link href="/dashboard/admin/users">
                       <Button variant={isActive('/dashboard/admin/users') ? 'default' : 'ghost'} size="sm">
@@ -98,14 +96,14 @@ export function Navbar({ user }: NavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{user.username}</p>
+                      <p className="font-medium">{user.name}</p>
                       <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                     </div>
                   </div>

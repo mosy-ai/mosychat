@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DashboardLayout } from '@/components/dashboard-layout';
-import { kbApi, Document, KnowledgeBase } from '@/lib/kb-api';
+import { apiClient, Document, KnowledgeBase, DocumentStatus } from '@/lib/api-client';
+import { verifyAndGetMe } from '@/lib/custom-func';
 import { Upload, Download, Trash2, ArrowLeft, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,9 +28,16 @@ export default function KnowledgeBaseDocuments() {
 
   const loadKnowledgeBase = async () => {
     try {
-      const response = await kbApi.getKnowledgeBase(kbId);
-      setKb(response.data);
-      setDocuments(response.data.documents || []);
+      // Set up authentication
+      await verifyAndGetMe();
+      
+      // Get knowledge base info
+      const kbResponse = await apiClient.getKnowledgeBase(kbId);
+      setKb(kbResponse.data);
+      
+      // Get documents separately
+      const documentsResponse = await apiClient.listDocuments();
+      setDocuments(documentsResponse.data || []);
     } catch (error) {
       console.error('Failed to load knowledge base:', error);
       alert('Failed to load knowledge base');
@@ -44,9 +52,21 @@ export default function KnowledgeBaseDocuments() {
 
     setUploading(true);
     try {
-      await kbId ? null : alert('Knowledge Base ID is required');
+      if (!kbId) {
+        alert('Knowledge Base ID is required');
+        return;
+      }
       
-      await kbApi.uploadDocument(file, kbId);
+      // Create document with knowledge base ID in the document_dto
+      const documentDto = JSON.stringify({
+        knowledge_base_id: kbId,
+        description: `Document uploaded to knowledge base ${kbId}`
+      });
+      
+      await apiClient.createDocument({
+        document_dto: documentDto,
+        file: file
+      });
       await loadKnowledgeBase(); // Reload to show new document
       event.target.value = '';
     } catch (error) {
@@ -59,7 +79,9 @@ export default function KnowledgeBaseDocuments() {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const blob = await kbApi.downloadDocument(doc.id);
+      const response = await apiClient.viewRawFile(doc.id);
+      // Create a blob from the response
+      const blob = new Blob([JSON.stringify(response)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -78,7 +100,7 @@ export default function KnowledgeBaseDocuments() {
     if (!confirm('Are you sure you want to delete this document?')) return;
     
     try {
-      await kbApi.deleteDocument(docId);
+      await apiClient.deleteDocument(docId);
       await loadKnowledgeBase(); // Reload to remove deleted document
     } catch (error) {
       console.error('Failed to delete document:', error);
@@ -121,7 +143,7 @@ export default function KnowledgeBaseDocuments() {
               <FileText className="w-8 h-8 mr-3" />
               {kb?.name}
             </h1>
-            <p className="text-muted-foreground">{kb?.description || 'No description provided'}</p>
+            <p className="text-muted-foreground">Knowledge Base ID: {kb?.id}</p>
           </div>
         </div>
 
@@ -198,8 +220,10 @@ export default function KnowledgeBaseDocuments() {
                       <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          doc.status === 'processed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                          doc.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                          doc.status === DocumentStatus.COMPLETED ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                          doc.status === DocumentStatus.PROCESSING ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                          doc.status === DocumentStatus.INDEXING ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          doc.status === DocumentStatus.QUEUED ? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' :
                           'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
                           {doc.status}

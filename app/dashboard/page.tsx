@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { UserResponse } from '@/lib/api-client';
+import { verifyAndGetMe } from '@/lib/custom-func';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null)
+  const [user, setUser] = useState<UserResponse | null>(null)
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -19,11 +21,11 @@ export default function Dashboard() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const response = await fetch('/api/auth/verify');
-        const data = await response.json();
-        if (data.success && data.authenticated) {
-          setUser(data.user);
+        const currentUser = await verifyAndGetMe();
+        if (!currentUser) {
+          throw new Error("User not found");
         }
+        setUser(currentUser);
       } catch (error) {
         console.error('Failed to get user:', error);
       }
@@ -73,7 +75,7 @@ export default function Dashboard() {
             {user && (
               <Alert>
                 <AlertDescription>
-                  🎉 Welcome {user.username}! You are logged in as {user.role}.
+                  🎉 Welcome {user.name}! You are logged in as {user.role}.
                 </AlertDescription>
               </Alert>
             )}
@@ -121,7 +123,7 @@ export default function Dashboard() {
                     </CardHeader>
                   </Link>
                 </Card>
-                {user?.role !== 'admin' && (
+                {user?.role !== 'ADMIN' && (
                 <Card className="hover:bg-accent cursor-pointer transition-colors">
                   <Link href="/dashboard/knowledge-base">
                     <CardHeader>
@@ -131,7 +133,7 @@ export default function Dashboard() {
                   </Link>
                 </Card>
                 )}
-                {user?.role === 'admin' && (
+                {user?.role === 'ADMIN' && (
                   <>
                     <Card className="hover:bg-accent cursor-pointer transition-colors">
                       <Link href="/dashboard/admin/users">

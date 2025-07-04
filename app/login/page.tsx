@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { apiClient } from '@/lib/api-client'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,31 +17,22 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
+    setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
+      const response = await apiClient.login({ email, password })
+      if (response.access_token) {
+        document.cookie = `access_token=${response.access_token}; path=/; secure; samesite=strict`
         router.push('/dashboard')
-        router.refresh()
       } else {
-        setError(data.error || 'Login failed')
+        setError('Invalid email or password')
       }
-    } catch (error) {
-      setError('Network error. Please try again.')
+    } catch (err) {
+      setError('Failed to sign in. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    
-    setLoading(false)
   }
 
   return (
@@ -54,13 +46,13 @@ export default function Login() {
             <div className="space-y-4">
               <div>
                 <Input
-                  id="username"
-                  name="username"
+                  id="email"
+                  name="email"
                   type="text"
                   required
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>

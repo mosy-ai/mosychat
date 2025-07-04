@@ -5,7 +5,7 @@ import {
   ExperimentalEmptyAdapter,
   langGraphPlatformEndpoint,
 } from "@copilotkit/runtime";
-import { findUserByUsername, initDB } from '@/lib/db'
+import { apiClient } from '@/lib/api-client';
 
 const serviceAdapter = new ExperimentalEmptyAdapter();
 
@@ -18,8 +18,19 @@ export const POST = async (req: NextRequest) => {
       return new Response("User ID required", { status: 401 });
     }
 
-    await initDB();
-    const user = await findUserByUsername(userId);
+    // Set up API client with token from cookies
+    const cookieHeader = req.headers.get("cookie");
+    const accessToken = cookieHeader?.split('; ').find(row => row.startsWith('access_token='));
+    
+    if (!accessToken) {
+      return new Response("Access token required", { status: 401 });
+    }
+    
+    const token = accessToken.split('=')[1];
+    apiClient.setToken(token);
+
+    // Get user from API client
+    const user = await apiClient.getUser(userId);
     
     if (!user) {
       return new Response("User not found", { status: 404 });

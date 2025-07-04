@@ -8,31 +8,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { Trash2, Settings } from 'lucide-react'
+import { apiClient, UserResponse } from '@/lib/api-client'
+import { verifyAndGetMe } from '@/lib/custom-func'
 
 interface User {
   id: string
-  username: string
-  role: string
+  name: string
+  email: string
+  role: string | null
   langgr_url: string | null
   agent_name: string | null
-  createdAt: string
+  created_at: string
+  is_active: boolean | null
 }
 
 export default function AdminPanel() {
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<UserResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showAgentConfig, setShowAgentConfig] = useState<string | null>(null)
   const [newUser, setNewUser] = useState({
-    username: '',
+    email: '',
+    name: '',
     password: '',
-    role: 'user'
+    role: 'USER'
   })
   const [agentConfig, setAgentConfig] = useState({
     langgr_url: '',
     agent_name: ''
   })
-  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<UserResponse | null>(null)
 
   useEffect(() => {
     loadUsers()
@@ -41,12 +46,8 @@ export default function AdminPanel() {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('/api/users')
-      const data = await response.json()
-      
-      if (data.success) {
-        setUsers(data.users)
-      }
+      const response = await apiClient.listUsers()
+      setUsers(response.data)
     } catch (error) {
       console.error('Failed to load users:', error)
     }
@@ -55,11 +56,8 @@ export default function AdminPanel() {
 
   const getCurrentUser = async () => {
     try {
-      const response = await fetch('/api/auth/verify')
-      const data = await response.json()
-      if (data.success && data.authenticated) {
-        setCurrentUser(data.user)
-      }
+      const user = await verifyAndGetMe()
+      setCurrentUser(user)
     } catch (error) {
       console.error('Failed to get current user:', error)
     }
@@ -69,21 +67,21 @@ export default function AdminPanel() {
     e.preventDefault()
     
     try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setNewUser({ username: '', password: '', role: 'user' })
-        setShowCreateForm(false)
-        loadUsers()
-      } else {
-        alert(data.error || 'Failed to create user')
+      const userData = {
+        email: newUser.email,
+        name: newUser.name,
+        password: newUser.password,
+        is_active: true,
+        role: newUser.role
       }
+      
+      await apiClient.createUser(userData)
+      setNewUser({ email: '', name: '', password: '', role: 'USER' })
+      setShowCreateForm(false)
+      loadUsers()
+      alert('User created successfully!')
     } catch (error) {
+      console.error('Failed to create user:', error)
       alert('Error creating user')
     }
   }
@@ -93,75 +91,46 @@ export default function AdminPanel() {
     if (!newPassword) return
 
     try {
-      const response = await fetch('/api/users/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetUserId: userId,
-          newPassword
-        })
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        alert('Password updated successfully!')
-      } else {
-        alert(data.error || 'Failed to update password')
-      }
+      await apiClient.updateUser(userId, { password: newPassword })
+      alert('Password updated successfully!')
     } catch (error) {
+      console.error('Failed to update password:', error)
       alert('Error updating password')
     }
   }
 
-  const deleteUser = async (userId: string, username: string) => {
-    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+  const deleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) {
       return
     }
 
     try {
-      const response = await fetch(`/api/users?id=${userId}`, {
-        method: 'DELETE'
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        alert('User deleted successfully!')
-        loadUsers()
-      } else {
-        alert(data.error || 'Failed to delete user')
-      }
+      await apiClient.deleteUser(userId)
+      alert('User deleted successfully!')
+      loadUsers()
     } catch (error) {
+      console.error('Failed to delete user:', error)
       alert('Error deleting user')
     }
   }
 
   const updateAgentConfig = async (userId: string) => {
     try {
-      const response = await fetch('/api/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          langgr_url: agentConfig.langgr_url || null,
-          agent_name: agentConfig.agent_name || null
-        })
+      await apiClient.updateUser(userId, {
+        langgr_url: agentConfig.langgr_url || null,
+        agent_name: agentConfig.agent_name || null
       })
-
-      const data = await response.json()
-      if (data.success) {
-        alert('Agent configuration updated successfully!')
-        setShowAgentConfig(null)
-        setAgentConfig({ langgr_url: '', agent_name: '' })
-        loadUsers()
-      } else {
-        alert(data.error || 'Failed to update agent configuration')
-      }
+      alert('Agent configuration updated successfully!')
+      setShowAgentConfig(null)
+      setAgentConfig({ langgr_url: '', agent_name: '' })
+      loadUsers()
     } catch (error) {
+      console.error('Failed to update agent configuration:', error)
       alert('Error updating agent configuration')
     }
   }
 
-  const openAgentConfig = (user: User) => {
+  const openAgentConfig = (user: UserResponse) => {
     setAgentConfig({
       langgr_url: user.langgr_url || '',
       agent_name: user.agent_name || ''
@@ -201,10 +170,17 @@ export default function AdminPanel() {
                 <CardContent>
                   <form onSubmit={handleCreateUser} className="space-y-4">
                     <Input
+                      type="email"
+                      placeholder="Email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                      required
+                    />
+                    <Input
                       type="text"
-                      placeholder="Username"
-                      value={newUser.username}
-                      onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                      placeholder="Name"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({...newUser, name: e.target.value})}
                       required
                     />
                     <Input
@@ -219,8 +195,8 @@ export default function AdminPanel() {
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="USER">User</SelectItem>
+                        <SelectItem value="ADMIN">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <div className="flex gap-2">
@@ -272,7 +248,8 @@ export default function AdminPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Username</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Agent URL</TableHead>
                       <TableHead>Agent Name</TableHead>
@@ -283,9 +260,10 @@ export default function AdminPanel() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.username}</TableCell>
+                        <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                        <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs ${user.role === 'ADMIN' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
                             {user.role}
                           </span>
                         </TableCell>
@@ -293,7 +271,7 @@ export default function AdminPanel() {
                           {user.langgr_url ? user.langgr_url.substring(0, 30) + '...' : 'Not set'}
                         </TableCell>
                         <TableCell>{user.agent_name || 'Not set'}</TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
@@ -311,9 +289,9 @@ export default function AdminPanel() {
                             >
                               Reset Password
                             </Button>
-                            {currentUser?.username !== user.username && (
+                            {currentUser?.email !== user.email && (
                               <Button
-                                onClick={() => deleteUser(user.id, user.username)}
+                                onClick={() => deleteUser(user.id, user.email)}
                                 variant="destructive"
                                 size="sm"
                                 title="Delete user"

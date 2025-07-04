@@ -6,20 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Navbar } from '@/components/navbar'
+import { UserResponse } from "@/lib/api-client";
+import { verifyAndGetMe } from "@/lib/custom-func";
 
 export default function Home() {
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null)
+  const [user, setUser] = useState<UserResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/verify')
-        const data = await response.json()
-        
-        if (data.success && data.authenticated) {
-          setUser(data.user)
+        const currentUser = await verifyAndGetMe();
+        if (!currentUser) {
+          throw new Error("User not found");
         }
+
+        setUser(currentUser);
       } catch (error) {
         console.error('Auth check failed:', error)
       }
@@ -49,7 +51,7 @@ export default function Home() {
               <div className="space-y-4">
                 <Alert>
                   <AlertDescription>
-                    ✅ You are logged in as {user.username} ({user.role})
+                    ✅ You are logged in as {user.name} ({user.role})
                   </AlertDescription>
                 </Alert>
                 <Button asChild className="w-full">
