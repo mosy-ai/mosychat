@@ -11,7 +11,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { apiClient, KnowledgeBase, CreateKnowledgeBaseRequest, UpdateKnowledgeBaseRequest, UserResponse } from '@/lib/api-client';
 import { verifyAndGetMe } from '@/lib/custom-func';
 import Link from 'next/link';
-import { Trash2, Edit, Plus, FileText, AlertCircle } from 'lucide-react';
+import { Trash2, Edit, Plus, FileText, AlertCircle, Users } from 'lucide-react';
 
 export default function KnowledgeBasePage() {
   const [user, setUser] = useState<UserResponse | null>(null);
@@ -20,11 +20,14 @@ export default function KnowledgeBasePage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingKB, setEditingKB] = useState<KnowledgeBase | null>(null);
+  const [editingPermissions, setEditingPermissions] = useState<KnowledgeBase | null>(null);
+  const [users, setUsers] = useState<UserResponse[]>([]);
   const [formData, setFormData] = useState<{ name: string; user_ids?: string[] | null; description?: string }>({
     name: '',
     user_ids: null,
     description: ''
   });
+  const [permissionUserIds, setPermissionUserIds] = useState<string[]>([]);
 
   useEffect(() => {
     loadUserAndKnowledgeBases();
@@ -46,6 +49,12 @@ export default function KnowledgeBasePage() {
       
       const response = await Promise.race([kbPromise, timeoutPromise]) as any;
       setKnowledgeBases(response.data || []);
+
+      // Load users for permission management
+      if (userData.role === 'ADMIN') {
+        const usersResponse = await apiClient.listUsers();
+        setUsers(usersResponse.data || []);
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
       setError(error instanceof Error ? error.message : 'Failed to load knowledge bases');
@@ -108,6 +117,38 @@ export default function KnowledgeBasePage() {
   const startEdit = (kb: KnowledgeBase) => {
     setEditingKB(kb);
     setFormData({ name: kb.name, description: '' });
+  };
+
+  const startPermissionEdit = (kb: KnowledgeBase) => {
+    setEditingPermissions(kb);
+    setPermissionUserIds(kb.user_ids || []);
+  };
+
+  const handleUpdatePermissions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPermissions) return;
+    
+    try {
+      const updateData: UpdateKnowledgeBaseRequest = {
+        user_ids: permissionUserIds.length > 0 ? permissionUserIds : null
+      };
+      await apiClient.updateKnowledgeBase(editingPermissions.id, updateData);
+      setEditingPermissions(null);
+      setPermissionUserIds([]);
+      await loadUserAndKnowledgeBases();
+      alert('Knowledge base permissions updated successfully!');
+    } catch (error) {
+      console.error('Failed to update permissions:', error);
+      alert('Failed to update permissions: ' + (error as Error).message);
+    }
+  };
+
+  const toggleUserPermission = (userId: string) => {
+    setPermissionUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
   };
 
   const canModifyKB = user?.role === 'ADMIN';
@@ -214,6 +255,9 @@ export default function KnowledgeBasePage() {
                         <Button size="sm" variant="outline" onClick={() => startEdit(kb)}>
                           <Edit className="w-4 h-4" />
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => startPermissionEdit(kb)}>
+                          <Users className="w-4 h-4" />
+                        </Button>
                         <Button size="sm" variant="destructive" onClick={() => handleDelete(kb.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -256,6 +300,48 @@ export default function KnowledgeBasePage() {
                 <div className="flex gap-2">
                   <Button type="submit">Update</Button>
                   <Button type="button" variant="outline" onClick={() => setEditingKB(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {editingPermissions && (
+          <Dialog open={!!editingPermissions} onOpenChange={() => setEditingPermissions(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Manage Permissions</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleUpdatePermissions} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Users with Access:</label>
+                  <div className="max-h-48 overflow-y-auto space-y-2 border rounded p-2">
+                    {users.map((user) => (
+                      <div key={user.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={user.id}
+                          checked={permissionUserIds.includes(user.id)}
+                          onChange={() => toggleUserPermission(user.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <label htmlFor={user.id} className="text-sm cursor-pointer">
+                          {user.name || user.email}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {permissionUserIds.length === 0 
+                      ? 'No users selected - knowledge base will be public' 
+                      : `${permissionUserIds.length} user(s) selected`}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit">Update Permissions</Button>
+                  <Button type="button" variant="outline" onClick={() => setEditingPermissions(null)}>
                     Cancel
                   </Button>
                 </div>

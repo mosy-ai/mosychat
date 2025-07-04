@@ -28,6 +28,9 @@ interface KnowledgeBase {
   id: string;
   name: string;
   user_ids?: string[] | null;
+  users?: UserResponse[] | null;
+  documents?: Document[] | null;
+  document_count?: number | null;
   created_at: string;
   updated_at: string;
 }

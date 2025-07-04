@@ -35,9 +35,8 @@ export default function KnowledgeBaseDocuments() {
       const kbResponse = await apiClient.getKnowledgeBase(kbId);
       setKb(kbResponse.data);
       
-      // Get documents separately
-      const documentsResponse = await apiClient.listDocuments();
-      setDocuments(documentsResponse.data || []);
+      setDocuments(kbResponse.data.documents || []);
+      setLoading(false);
     } catch (error) {
       console.error('Failed to load knowledge base:', error);
       alert('Failed to load knowledge base');
@@ -60,7 +59,8 @@ export default function KnowledgeBaseDocuments() {
       // Create document with knowledge base ID in the document_dto
       const documentDto = JSON.stringify({
         knowledge_base_id: kbId,
-        description: `Document uploaded to knowledge base ${kbId}`
+        description: `string`,
+        summary: `string`,
       });
       
       await apiClient.createDocument({
