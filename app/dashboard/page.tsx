@@ -1,9 +1,7 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -12,11 +10,6 @@ import { verifyAndGetMe } from '@/lib/custom-func';
 
 export default function Dashboard() {
   const [user, setUser] = useState<UserResponse | null>(null)
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: ''
-  });
 
   useEffect(() => {
     const getUser = async () => {
@@ -33,28 +26,6 @@ export default function Dashboard() {
     getUser();
   }, []);
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const response = await fetch('/api/users/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(passwordForm)
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        alert('Password changed successfully!');
-        setShowPasswordForm(false);
-        setPasswordForm({ currentPassword: '', newPassword: '' });
-      } else {
-        alert(data.error || 'Failed to change password');
-      }
-    } catch (error) {
-      alert('Error changing password');
-    }
-  };
 
   return (
     <DashboardLayout>
@@ -63,12 +34,6 @@ export default function Dashboard() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="text-3xl">Dashboard</CardTitle>
-              <Button
-                onClick={() => setShowPasswordForm(!showPasswordForm)}
-                variant="outline"
-              >
-                Change Password
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -78,38 +43,6 @@ export default function Dashboard() {
                   🎉 Welcome {user.name}! You are logged in as {user.role}.
                 </AlertDescription>
               </Alert>
-            )}
-
-            {showPasswordForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Change Password</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <Input
-                      type="password"
-                      placeholder="Current Password"
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                      required
-                    />
-                    <Input
-                      type="password"
-                      placeholder="New Password"
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                      required
-                    />
-                    <div className="flex gap-2">
-                      <Button type="submit">Update Password</Button>
-                      <Button type="button" variant="outline" onClick={() => setShowPasswordForm(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
             )}
 
             <div>

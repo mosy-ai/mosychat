@@ -11,17 +11,6 @@ import { Trash2, Settings } from 'lucide-react'
 import { apiClient, UserResponse } from '@/lib/api-client'
 import { verifyAndGetMe } from '@/lib/custom-func'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string | null
-  langgr_url: string | null
-  agent_name: string | null
-  created_at: string
-  is_active: boolean | null
-}
-
 export default function AdminPanel() {
   const [users, setUsers] = useState<UserResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -149,167 +138,159 @@ export default function AdminPanel() {
   return (
     <DashboardLayout requireAdmin>
       <div className="max-w-6xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-3xl">User Management</CardTitle>
-              <Button
-                onClick={() => setShowCreateForm(!showCreateForm)}
-                variant="default"
-              >
-                Create User
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {showCreateForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Create New User</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleCreateUser} className="space-y-4">
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                      required
-                    />
-                    <Input
-                      type="text"
-                      placeholder="Name"
-                      value={newUser.name}
-                      onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                      required
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      required
-                    />
-                    <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USER">User</SelectItem>
-                        <SelectItem value="ADMIN">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <div className="flex gap-2">
-                      <Button type="submit">Create User</Button>
-                      <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-3xl">User Management</CardTitle>
+          <Button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            variant="default"
+          >
+            Create User
+          </Button>
+        </div>
+        {showCreateForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New User</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  required
+                />
+                <Input
+                  type="text"
+                  placeholder="Name"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                  required
+                />
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  required
+                />
+                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USER">User</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button type="submit">Create User</Button>
+                  <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
-            {showAgentConfig && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configure Agent Settings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Input
-                      type="text"
-                      placeholder="LangGraph Deployment URL"
-                      value={agentConfig.langgr_url}
-                      onChange={(e) => setAgentConfig({...agentConfig, langgr_url: e.target.value})}
-                    />
-                    <Input
-                      type="text"
-                      placeholder="Agent Name"
-                      value={agentConfig.agent_name}
-                      onChange={(e) => setAgentConfig({...agentConfig, agent_name: e.target.value})}
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={() => updateAgentConfig(showAgentConfig)}>
-                        Update Configuration
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => setShowAgentConfig(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+        {showAgentConfig && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Configure Agent Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Input
+                  type="text"
+                  placeholder="LangGraph Deployment URL"
+                  value={agentConfig.langgr_url}
+                  onChange={(e) => setAgentConfig({...agentConfig, langgr_url: e.target.value})}
+                />
+                <Input
+                  type="text"
+                  placeholder="Agent Name"
+                  value={agentConfig.agent_name}
+                  onChange={(e) => setAgentConfig({...agentConfig, agent_name: e.target.value})}
+                />
+                <div className="flex gap-2">
+                  <Button onClick={() => updateAgentConfig(showAgentConfig)}>
+                    Update Configuration
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowAgentConfig(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            <div>
-              <h2 className="text-xl font-semibold mb-4">User Management</h2>
-              <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Agent URL</TableHead>
-                      <TableHead>Agent Name</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${user.role === 'ADMIN' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
-                            {user.role}
-                          </span>
-                        </TableCell>
-                        <TableCell className="max-w-32 truncate" title={user.langgr_url || 'Not set'}>
-                          {user.langgr_url ? user.langgr_url.substring(0, 30) + '...' : 'Not set'}
-                        </TableCell>
-                        <TableCell>{user.agent_name || 'Not set'}</TableCell>
-                        <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => openAgentConfig(user)}
-                              variant="outline"
-                              size="sm"
-                              title="Configure agent"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              onClick={() => resetUserPassword(user.id)}
-                              variant="link"
-                              size="sm"
-                            >
-                              Reset Password
-                            </Button>
-                            {currentUser?.email !== user.email && (
-                              <Button
-                                onClick={() => deleteUser(user.id, user.email)}
-                                variant="destructive"
-                                size="sm"
-                                title="Delete user"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        
+          <Card className="px-8">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Agent URL</TableHead>
+                  <TableHead>Agent Name</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs ${user.role === 'ADMIN' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}>
+                        {user.role}
+                      </span>
+                    </TableCell>
+                    <TableCell className="max-w-32 truncate" title={user.langgr_url || 'Not set'}>
+                      {user.langgr_url ? user.langgr_url.substring(0, 30) + '...' : 'Not set'}
+                    </TableCell>
+                    <TableCell>{user.agent_name || 'Not set'}</TableCell>
+                    <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => openAgentConfig(user)}
+                          variant="outline"
+                          size="sm"
+                          title="Configure agent"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          onClick={() => resetUserPassword(user.id)}
+                          variant="link"
+                          size="sm"
+                        >
+                          Reset Password
+                        </Button>
+                        {currentUser?.email !== user.email && (
+                          <Button
+                            onClick={() => deleteUser(user.id, user.email)}
+                            variant="destructive"
+                            size="sm"
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
     </DashboardLayout>
   )
 }
