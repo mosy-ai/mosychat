@@ -166,7 +166,7 @@ export default function KnowledgeBasePage() {
 
   return (
     <DashboardLayout>
-     {user?.role === 'ADMIN' ? (
+
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -246,6 +246,7 @@ export default function KnowledgeBasePage() {
         ) : !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {knowledgeBases.map((kb) => (
+              (!kb.user_ids?.includes(user?.id ?? '') && user?.role !== 'ADMIN') ? null : (
               <Card key={kb.id} className="relative hover:shadow-md transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -279,7 +280,7 @@ export default function KnowledgeBasePage() {
                     </Button>
                   </Link>
                 </CardContent>
-              </Card>
+              </Card>)
             ))}
           </div>
         )}
@@ -349,16 +350,7 @@ export default function KnowledgeBasePage() {
             </DialogContent>
           </Dialog>
         )}
-      </div>) : (
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Alert >
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You do not have permission to manage knowledge bases. Please contact an administrator.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
+      </div>
 
     </DashboardLayout>
   );

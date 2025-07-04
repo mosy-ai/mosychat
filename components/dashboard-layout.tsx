@@ -58,9 +58,8 @@ export function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      document.cookie = '';
-      router.push("/");
-      router.refresh();
+      document.cookie = "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      router.refresh()
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -110,14 +109,14 @@ export function DashboardLayout({
                         Users
                       </Button>
                     </Link>
-                    <Link href="/dashboard/knowledge-base">
+                  </>
+                )}
+                <Link href="/dashboard/knowledge-base">
                       <Button variant="ghost" size="sm">
                         <Database className="w-4 h-4 mr-2" />
                         Knowledge Base
                       </Button>
                     </Link>
-                  </>
-                )}
               </div>
             </div>
 

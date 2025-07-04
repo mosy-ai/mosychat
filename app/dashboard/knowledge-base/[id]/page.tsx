@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from "next/navigation";
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { Upload, Download, Trash2, ArrowLeft, FileText, Search } from 'lucide-re
 import Link from 'next/link';
 
 export default function KnowledgeBaseDocuments() {
+  const router = useRouter();
   const params = useParams();
   const kbId = params.id as string;
   
@@ -29,19 +31,23 @@ export default function KnowledgeBaseDocuments() {
   const loadKnowledgeBase = async () => {
     try {
       // Set up authentication
-      await verifyAndGetMe();
+      const user = await verifyAndGetMe();
       
       // Get knowledge base info
       const kbResponse = await apiClient.getKnowledgeBase(kbId);
+
+      if (!kbResponse.data.user_ids?.includes(user?.id) && user?.role !== 'ADMIN') {
+        alert('You do not have permission to view this knowledge base');
+        router.push('/dashboard/knowledge-base');
+        return;
+      }
+
       setKb(kbResponse.data);
-      
       setDocuments(kbResponse.data.documents || []);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load knowledge base:', error);
       alert('Failed to load knowledge base');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -122,14 +128,14 @@ export default function KnowledgeBaseDocuments() {
 
   if (loading) {
     return (
-      <DashboardLayout requireAdmin>
+      <DashboardLayout>
         <div className="text-center">Loading knowledge base...</div>
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout requireAdmin>
+    <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/knowledge-base">

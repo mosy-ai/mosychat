@@ -23,7 +23,7 @@ export default function Login() {
     try {
       const response = await apiClient.login({ email, password })
       if (response.access_token) {
-        document.cookie = `access_token=${response.access_token}; path=/; secure; samesite=strict`
+        document.cookie = `access_token=${response.access_token}; path=/; samesite=lax`
         router.push('/dashboard')
       } else {
         setError('Invalid email or password')
