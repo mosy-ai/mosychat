@@ -1,17 +1,23 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Navbar } from '@/components/navbar'
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Navbar } from "@/components/navbar";
 import { UserResponse } from "@/lib/api-client";
 import { verifyAndGetMe } from "@/lib/custom-func";
 
 export default function Home() {
-  const [user, setUser] = useState<UserResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -23,13 +29,13 @@ export default function Home() {
 
         setUser(currentUser);
       } catch (error) {
-        console.error('Auth check failed:', error)
+        console.error("Auth check failed:", error);
       }
-      setLoading(false)
-    }
+      setLoading(false);
+    };
 
-    checkAuth()
-  }, [])
+    checkAuth();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,7 +45,10 @@ export default function Home() {
           <CardHeader className="text-center">
             <CardTitle className="text-3xl">Welcome to ChatMosyAI</CardTitle>
             <CardDescription>
-              MosyAI helps you get answers, find inspiration and be more productive. It is free to use and easy to try. Just ask and ChatMosyAI can help with writing, learning, brainstorming and more.
+              MosyAI helps you get answers, find inspiration and be more
+              productive. It is free to use and easy to try. Just ask and
+              ChatMosyAI can help with writing, learning, brainstorming and
+              more.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -72,5 +81,5 @@ export default function Home() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

@@ -1,28 +1,47 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { apiClient, Document, KnowledgeBase, DocumentStatus } from '@/lib/api-client';
-import { verifyAndGetMe } from '@/lib/custom-func';
-import { Upload, Download, Trash2, ArrowLeft, FileText, Search } from 'lucide-react';
-import Link from 'next/link';
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import {
+  apiClient,
+  Document,
+  KnowledgeBase,
+  DocumentStatus,
+} from "@/lib/api-client";
+import { verifyAndGetMe } from "@/lib/custom-func";
+import {
+  Upload,
+  Download,
+  Trash2,
+  ArrowLeft,
+  FileText,
+  Search,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function KnowledgeBaseDocuments() {
   const router = useRouter();
   const params = useParams();
   const kbId = params.id as string;
-  
+
   const [kb, setKb] = useState<KnowledgeBase | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     loadKnowledgeBase();
@@ -32,13 +51,16 @@ export default function KnowledgeBaseDocuments() {
     try {
       // Set up authentication
       const user = await verifyAndGetMe();
-      
+
       // Get knowledge base info
       const kbResponse = await apiClient.getKnowledgeBase(kbId);
 
-      if (!kbResponse.data.user_ids?.includes(user?.id) && user?.role !== 'ADMIN') {
-        alert('You do not have permission to view this knowledge base');
-        router.push('/dashboard/knowledge-base');
+      if (
+        !kbResponse.data.user_ids?.includes(user?.id) &&
+        user?.role !== "ADMIN"
+      ) {
+        alert("You do not have permission to view this knowledge base");
+        router.push("/dashboard/knowledge-base");
         return;
       }
 
@@ -46,38 +68,42 @@ export default function KnowledgeBaseDocuments() {
       setDocuments(kbResponse.data.documents || []);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to load knowledge base:', error);
-      alert('Failed to load knowledge base');
+      console.error("Failed to load knowledge base:", error);
+      alert("Failed to load knowledge base");
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
     setUploading(true);
     try {
       if (!kbId) {
-        alert('Knowledge Base ID is required');
+        alert("Knowledge Base ID is required");
         return;
       }
-      
-      // Create document with knowledge base ID in the document_dto
-      const documentDto = JSON.stringify({
-        knowledge_base_id: kbId,
-        description: `string`,
-        summary: `string`,
-      });
-      
-      await apiClient.createDocument({
-        document_dto: documentDto,
-        file: file
-      });
-      await loadKnowledgeBase(); // Reload to show new document
-      event.target.value = '';
+
+      // Upload each file with a separate API call
+      for (const file of Array.from(files)) {
+        const documentDto = JSON.stringify({
+          knowledge_base_id: kbId,
+          description: `string`,
+          summary: `string`,
+        });
+
+        await apiClient.createDocument({
+          document_dto: documentDto,
+          file: file,
+        });
+      }
+      await loadKnowledgeBase(); // Reload to show new documents
+      event.target.value = "";
     } catch (error) {
-      console.error('Failed to upload document:', error);
-      alert('Failed to upload document');
+      console.error("Failed to upload document(s):", error);
+      alert("Failed to upload document(s)");
     } finally {
       setUploading(false);
     }
@@ -87,9 +113,11 @@ export default function KnowledgeBaseDocuments() {
     try {
       const response = await apiClient.viewRawFile(doc.id);
       // Create a blob from the response
-      const blob = new Blob([JSON.stringify(response)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(response)], {
+        type: "application/json",
+      });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = doc.file_name;
       document.body.appendChild(a);
@@ -97,32 +125,32 @@ export default function KnowledgeBaseDocuments() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Failed to download document:', error);
-      alert('Failed to download document');
+      console.error("Failed to download document:", error);
+      alert("Failed to download document");
     }
   };
 
   const handleDelete = async (docId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-    
+    if (!confirm("Are you sure you want to delete this document?")) return;
+
     try {
       await apiClient.deleteDocument(docId);
       await loadKnowledgeBase(); // Reload to remove deleted document
     } catch (error) {
-      console.error('Failed to delete document:', error);
-      alert('Failed to delete document');
+      console.error("Failed to delete document:", error);
+      alert("Failed to delete document");
     }
   };
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const filteredDocuments = documents.filter(doc =>
+  const filteredDocuments = documents.filter((doc) =>
     doc.file_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -168,6 +196,7 @@ export default function KnowledgeBaseDocuments() {
                 disabled={uploading}
                 accept=".pdf,.doc,.docx,.txt,.md"
                 className="flex-1"
+                multiple
               />
               {uploading && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -202,10 +231,14 @@ export default function KnowledgeBaseDocuments() {
               <div className="text-center py-12">
                 <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-2">
-                  {searchTerm ? 'No documents match your search' : 'No documents found'}
+                  {searchTerm
+                    ? "No documents match your search"
+                    : "No documents found"}
                 </h3>
                 <p className="text-muted-foreground">
-                  {searchTerm ? 'Try adjusting your search terms.' : 'Upload your first document using the form above.'}
+                  {searchTerm
+                    ? "Try adjusting your search terms."
+                    : "Upload your first document using the form above."}
                 </p>
               </div>
             ) : (
@@ -222,33 +255,43 @@ export default function KnowledgeBaseDocuments() {
                 <TableBody>
                   {filteredDocuments.map((doc) => (
                     <TableRow key={doc.id}>
-                      <TableCell className="font-medium">{doc.file_name}</TableCell>
+                      <TableCell className="font-medium">
+                        {doc.file_name}
+                      </TableCell>
                       <TableCell>{formatFileSize(doc.file_size)}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          doc.status === DocumentStatus.COMPLETED ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                          doc.status === DocumentStatus.PROCESSING ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                          doc.status === DocumentStatus.INDEXING ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                          doc.status === DocumentStatus.QUEUED ? 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200' :
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            doc.status === DocumentStatus.COMPLETED
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : doc.status === DocumentStatus.PROCESSING
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                              : doc.status === DocumentStatus.INDEXING
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                              : doc.status === DocumentStatus.QUEUED
+                              ? "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          }`}
+                        >
                           {doc.status}
                         </span>
                       </TableCell>
-                      <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {new Date(doc.created_at).toLocaleDateString()}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleDownload(doc)}
                             title="Download document"
                           >
                             <Download className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
+                          <Button
+                            size="sm"
+                            variant="destructive"
                             onClick={() => handleDelete(doc.id)}
                             title="Delete document"
                           >

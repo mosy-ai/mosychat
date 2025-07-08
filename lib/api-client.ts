@@ -1,5 +1,6 @@
 // BASE_URL = get from environment variable or hardcoded for development
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8696/';
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8696/";
 
 // Base response interface
 interface BaseResponse<T = any> {
@@ -49,17 +50,17 @@ interface KnowledgeBaseListParams {
   page?: number;
   limit?: number;
   order_by?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
 }
 
 // Document interfaces
 enum DocumentStatus {
-  QUEUED = 'QUEUED',
-  PROCESSING = 'PROCESSING',
-  INDEXING = 'INDEXING',
-  FAILED = 'FAILED',
-  COMPLETED = 'COMPLETED',
-  READING = 'READING'
+  QUEUED = "QUEUED",
+  PROCESSING = "PROCESSING",
+  INDEXING = "INDEXING",
+  FAILED = "FAILED",
+  COMPLETED = "COMPLETED",
+  READING = "READING",
 }
 
 interface Document {
@@ -81,8 +82,8 @@ interface Document {
 interface DocumentListParams {
   page?: number;
   size?: number;
-  order_by?: 'created_at' | 'updated_at' | 'file_size' | 'score';
-  order?: 'asc' | 'desc';
+  order_by?: "created_at" | "updated_at" | "file_size" | "score";
+  order?: "asc" | "desc";
   statuses?: string[];
 }
 
@@ -154,8 +155,13 @@ interface UserListParams {
   page?: number;
   size?: number;
   role?: string;
-  order_by?: 'created_at' | 'updated_at' | 'username' | 'document_count' | 'name';
-  order?: 'asc' | 'desc';
+  order_by?:
+    | "created_at"
+    | "updated_at"
+    | "username"
+    | "document_count"
+    | "name";
+  order?: "asc" | "desc";
   is_active?: boolean;
 }
 
@@ -174,7 +180,7 @@ class ApiClient {
 
   private getHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
     if (this.token) {
@@ -206,60 +212,83 @@ class ApiClient {
   }
 
   // Knowledge Base methods
-  async listKnowledgeBases(params: KnowledgeBaseListParams = {}): Promise<BaseResponse<KnowledgeBase[]>> {
+  async listKnowledgeBases(
+    params: KnowledgeBaseListParams = {}
+  ): Promise<BaseResponse<KnowledgeBase[]>> {
     const searchParams = new URLSearchParams();
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.limit) searchParams.append('limit', params.limit.toString());
-    if (params.order_by) searchParams.append('order_by', params.order_by);
-    if (params.order) searchParams.append('order', params.order);
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.order_by) searchParams.append("order_by", params.order_by);
+    if (params.order) searchParams.append("order", params.order);
 
-    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
-    return this.request<BaseResponse<KnowledgeBase[]>>(`/api/v1/knowledge-base${query}`);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return this.request<BaseResponse<KnowledgeBase[]>>(
+      `/api/v1/knowledge-base${query}`
+    );
   }
 
-  async createKnowledgeBase(data: CreateKnowledgeBaseRequest): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>('/api/v1/knowledge-base', {
-      method: 'POST',
+  async createKnowledgeBase(
+    data: CreateKnowledgeBaseRequest
+  ): Promise<BaseResponse<KnowledgeBase>> {
+    return this.request<BaseResponse<KnowledgeBase>>("/api/v1/knowledge-base", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async getKnowledgeBase(id: string): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>(`/api/v1/knowledge-base/${id}`);
+    return this.request<BaseResponse<KnowledgeBase>>(
+      `/api/v1/knowledge-base/${id}`
+    );
   }
 
-  async updateKnowledgeBase(id: string, data: UpdateKnowledgeBaseRequest): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>(`/api/v1/knowledge-base/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+  async updateKnowledgeBase(
+    id: string,
+    data: UpdateKnowledgeBaseRequest
+  ): Promise<BaseResponse<KnowledgeBase>> {
+    return this.request<BaseResponse<KnowledgeBase>>(
+      `/api/v1/knowledge-base/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
   }
 
   async deleteKnowledgeBase(id: string): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>(`/api/v1/knowledge-base/${id}`, {
-      method: 'DELETE',
-    });
+    return this.request<BaseResponse<KnowledgeBase>>(
+      `/api/v1/knowledge-base/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
   }
 
   // Document methods
-  async listDocuments(params: DocumentListParams = {}): Promise<BaseResponse<Document[]>> {
+  async listDocuments(
+    params: DocumentListParams = {}
+  ): Promise<BaseResponse<Document[]>> {
     const searchParams = new URLSearchParams();
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.size) searchParams.append('size', params.size.toString());
-    if (params.order_by) searchParams.append('order_by', params.order_by);
-    if (params.order) searchParams.append('order', params.order);
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.size) searchParams.append("size", params.size.toString());
+    if (params.order_by) searchParams.append("order_by", params.order_by);
+    if (params.order) searchParams.append("order", params.order);
     if (params.statuses) {
-      params.statuses.forEach(status => searchParams.append('statuses', status));
+      params.statuses.forEach((status) =>
+        searchParams.append("statuses", status)
+      );
     }
 
-    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
     return this.request<BaseResponse<Document[]>>(`/api/v1/documents${query}`);
   }
 
-  async createDocument(data: CreateDocumentRequest): Promise<BaseResponse<Document>> {
+  async createDocument(
+    data: CreateDocumentRequest
+  ): Promise<BaseResponse<Document>> {
     const formData = new FormData();
-    formData.append('document_dto', data.document_dto);
-    formData.append('file', data.file);
+    formData.append("document_dto", data.document_dto);
+    formData.append("file", data.file);
 
     const url = `${this.baseURL}/api/v1/documents`;
     const headers: Record<string, string> = {};
@@ -269,7 +298,7 @@ class ApiClient {
     // Don't set Content-Type for FormData, let the browser set it automatically
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: formData,
     });
@@ -286,16 +315,19 @@ class ApiClient {
     return this.request<Document>(`/api/v1/documents/${id}`);
   }
 
-  async updateDocument(id: string, data: UpdateDocumentRequest): Promise<Document> {
+  async updateDocument(
+    id: string,
+    data: UpdateDocumentRequest
+  ): Promise<Document> {
     return this.request<Document>(`/api/v1/documents/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
   async deleteDocument(id: string): Promise<Document> {
     return this.request<Document>(`/api/v1/documents/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -305,40 +337,43 @@ class ApiClient {
 
   // Auth methods
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/v1/auth/register', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/v1/auth/register", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/v1/auth/login', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/v1/auth/login", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async getCurrentUser(): Promise<CurrentUserResponse> {
-    return this.request<CurrentUserResponse>('/api/v1/auth/me');
+    return this.request<CurrentUserResponse>("/api/v1/auth/me");
   }
 
   // User methods
-  async listUsers(params: UserListParams = {}): Promise<BaseResponse<UserResponse[]>> {
+  async listUsers(
+    params: UserListParams = {}
+  ): Promise<BaseResponse<UserResponse[]>> {
     const searchParams = new URLSearchParams();
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.size) searchParams.append('size', params.size.toString());
-    if (params.role) searchParams.append('role', params.role);
-    if (params.order_by) searchParams.append('order_by', params.order_by);
-    if (params.order) searchParams.append('order', params.order);
-    if (params.is_active !== undefined) searchParams.append('is_active', params.is_active.toString());
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.size) searchParams.append("size", params.size.toString());
+    if (params.role) searchParams.append("role", params.role);
+    if (params.order_by) searchParams.append("order_by", params.order_by);
+    if (params.order) searchParams.append("order", params.order);
+    if (params.is_active !== undefined)
+      searchParams.append("is_active", params.is_active.toString());
 
-    const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
     return this.request<BaseResponse<UserResponse[]>>(`/api/v1/users/${query}`);
   }
 
   async createUser(data: CreateUserRequest): Promise<UserResponse> {
-    return this.request<UserResponse>('/api/v1/users/', {
-      method: 'POST',
+    return this.request<UserResponse>("/api/v1/users/", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
@@ -349,14 +384,14 @@ class ApiClient {
 
   async updateUser(id: string, data: UpdateUserRequest): Promise<UserResponse> {
     return this.request<UserResponse>(`/api/v1/users/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async deleteUser(id: string): Promise<UserResponse> {
     return this.request<UserResponse>(`/api/v1/users/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 }

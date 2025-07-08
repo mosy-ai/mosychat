@@ -16,16 +16,7 @@ import { CopilotChat } from "@copilotkit/react-ui";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import {
-  Bot,
-  AlertCircle,
-  PlusCircle,
-  Trash2,
-  Loader2,
-  Send,
-  Square,
-  Paperclip,
-} from "lucide-react";
+import { Bot, AlertCircle, PlusCircle, Trash2, Loader2 } from "lucide-react";
 
 import "@copilotkit/react-ui/styles.css";
 import { UserResponse } from "@/lib/api-client";
@@ -107,8 +98,9 @@ const AgenticChat: React.FC = () => {
 
   return (
     <CopilotKit
-      runtimeUrl="/api/copilotkit" /* Change this line: https://example/api/copilotkit */
+      runtimeUrl="/api/copilotkit"
       showDevConsole={false}
+      agent={user.agent_name || "default-agent"}
       headers={{ "x-user-id": user.id }}
     >
       <ThreadedChat />
@@ -218,7 +210,7 @@ const ThreadedChat: React.FC = () => {
 
   /* ---- render ---- */
   return (
-    <div className="flex w-full overflow-hidden rounded-lg border bg-background">
+    <div className="flex h-[85vh] w-full overflow-hidden rounded-lg border bg-background">
       {/* sidebar */}
       <aside className="w-56 shrink-0 border-r p-3 space-y-2 overflow-y-auto">
         <button
@@ -259,22 +251,22 @@ const ThreadedChat: React.FC = () => {
       </aside>
 
       {/* chat pane */}
-      <main className="flex-1 flex flex-col ">
-        <Card className="flex-1 flex flex-col rounded-none border-none ">
+      <main className="flex-1 flex flex-col">
+        <Card className="flex-1 flex flex-col rounded-none border-none">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bot className="h-6 w-6 text-primary" />
               <CardTitle className="text-2xl">MosyAI Chat</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="flex-1">
+          <CardContent className="flex-1 pb-4">
             {activeThread ? (
               <ThreadChatWindow
                 threadId={activeThread.id}
                 onFirstUserMessage={markThreadUsed}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-[65vh]">
+              <div className="flex flex-col items-center justify-center h-full">
                 Please select a thread to start chatting.
               </div>
             )}
@@ -338,7 +330,7 @@ function ThreadChatWindow({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[65vh]">
+      <div className="flex flex-col items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
         <p className="text-muted-foreground">Loading messages...</p>
       </div>
@@ -352,36 +344,49 @@ function ThreadChatWindow({
       onSubmitMessage={handleSubmit}
       labels={{ placeholder: "Type your message here…" }}
       Messages={(props: MessagesProps) => (
-        <div className="flex flex-col space-y-4 p-4 h-[65vh] overflow-auto">
-          {props.messages.map((msg: any, index) => {
-            const isCurrentMessage = index === props.messages.length - 1;
-
-            return (
-              <div
-                key={`${threadId}-${msg.id || index}`}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {msg.role === "user" ? (
-                  <props.UserMessage message={msg.content} rawData={msg} />
-                ) : (
-                  <props.AssistantMessage
-                    message={msg.content}
-                    rawData={msg}
-                    isCurrentMessage={isCurrentMessage}
-                    isLoading={props.inProgress && isCurrentMessage}
-                    isGenerating={props.inProgress && isCurrentMessage}
-                    onRegenerate={() => props.onRegenerate?.(msg.id)}
-                    onCopy={props.onCopy}
-                    onThumbsUp={props.onThumbsUp}
-                    onThumbsDown={props.onThumbsDown}
-                    markdownTagRenderers={props.markdownTagRenderers}
-                  />
-                )}
-              </div>
-            );
-          })}
+        <div className="flex flex-col space-y-4 p-4 h-[60vh] overflow-auto">
+          {props.messages.map(
+            (msg: any, index: number) =>
+              msg.content &&
+              !msg.content?.includes('"reason"') &&
+              !(msg.content?.charAt(0) === "{") && (
+                <div
+                  key={`${threadId}-${index}`}
+                  className={`flex ${
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`flex items-start space-x-3 max-w-[80%] ${
+                      msg.role === "user"
+                        ? "flex-row-reverse space-x-reverse"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      {msg.role === "user" ? (
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">
+                            U
+                          </span>
+                        </div>
+                      ) : (
+                        <Bot className="h-8 w-8 text-primary" />
+                      )}
+                    </div>
+                    <div
+                      className={`p-3 rounded-xl transition-colors duration-150 ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+          )}
           <div
             ref={(el) => {
               if (el) {
@@ -391,83 +396,6 @@ function ThreadChatWindow({
           />
         </div>
       )}
-      Input={({ inProgress, onSend, isVisible = true, onStop, onUpload }) => {
-        const [inputValue, setInputValue] = useState("");
-
-        const handleSubmit = async (e: React.FormEvent) => {
-          e.preventDefault();
-          if (!inputValue.trim() || inProgress) return;
-
-          const message = inputValue.trim();
-          setInputValue("");
-
-          try {
-            await onSend(message);
-          } catch (error) {
-            console.error("Error sending message:", error);
-          }
-        };
-
-        const handleKeyDown = (e: React.KeyboardEvent) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit(e);
-          }
-        };
-
-        if (!isVisible) return null;
-
-        return (
-          <div className="border-t p-3">
-            <form onSubmit={handleSubmit} className="flex items-end gap-2">
-              <div className="flex-1 relative">
-                <textarea
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message..."
-                  className="w-full min-h-[40px] max-h-[120px] p-2 pr-8 border border-gray-200 rounded-lg resize-none focus:outline-none focus:border-gray-400 bg-white text-sm"
-                  disabled={inProgress}
-                  rows={1}
-                />
-
-                {/* Upload button inside input */}
-                {onUpload && (
-                  <button
-                    type="button"
-                    onClick={onUpload}
-                    className="absolute right-2 top-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={inProgress}
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-1">
-                {inProgress && onStop ? (
-                  <button
-                    type="button"
-                    onClick={onStop}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Square className="h-4 w-4" />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={!inputValue.trim() || inProgress}
-                    className="p-2 text-blue-500 hover:bg-blue-50 disabled:text-gray-300 disabled:hover:bg-transparent rounded-lg transition-colors"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        );
-      }}
     />
   );
 }

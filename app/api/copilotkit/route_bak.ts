@@ -1,19 +1,14 @@
 import { NextRequest } from "next/server";
-import { apiClient } from "@/lib/api-client";
 import {
   CopilotRuntime,
-  OpenAIAdapter,
-  copilotRuntimeNextJSPagesRouterEndpoint,
+  copilotRuntimeNextJSAppRouterEndpoint,
+  ExperimentalEmptyAdapter,
+  langGraphPlatformEndpoint,
 } from "@copilotkit/runtime";
-
+import { apiClient } from "@/lib/api-client";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL:
-    process.env.NEXT_PUBLIC_OPENROUTER_API_BASE_URL ||
-    "https://api.openai.com/v1",
-});
+const serviceAdapter = new ExperimentalEmptyAdapter();
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -45,26 +40,35 @@ export const POST = async (req: NextRequest) => {
     }
 
     // Check if user has agent configuration
-    if (!user.agent_name) {
-      return new Response("User model configuration not set", { status: 400 });
+    if (!user.langgr_url || !user.agent_name) {
+      return new Response("User agent configuration not set", { status: 400 });
     }
 
-    const serviceAdapter = new OpenAIAdapter({
-      openai,
-      model: user.agent_name,
+    // Create runtime with user-specific configuration
+    const runtime = new CopilotRuntime({
+      remoteEndpoints: [
+        langGraphPlatformEndpoint({
+          deploymentUrl: user.langgr_url,
+          langsmithApiKey: process.env.LANGSMITH_API_KEY || "",
+          agents: [
+            {
+              name: user.agent_name,
+              description: "A helpful LLM agent.",
+            },
+          ],
+        }),
+      ],
     });
 
-    const runtime = new CopilotRuntime();
-
-    const handleRequest = copilotRuntimeNextJSPagesRouterEndpoint({
-      endpoint: "/api/copilotkit",
+    const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
       runtime,
       serviceAdapter,
+      endpoint: "/api/copilotkit",
     });
 
-    return await handleRequest(req);
+    return handleRequest(req);
   } catch (error) {
-    console.error("Error in POST /api/copilotkit:", error);
+    console.error("CopilotKit error:", error);
     return new Response("Internal Server Error", { status: 500 });
   }
 };

@@ -1,15 +1,21 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { UserResponse } from '@/lib/api-client';
-import { verifyAndGetMe } from '@/lib/custom-func';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { UserResponse } from "@/lib/api-client";
+import { verifyAndGetMe } from "@/lib/custom-func";
 
 export default function Dashboard() {
-  const [user, setUser] = useState<UserResponse | null>(null)
+  const [user, setUser] = useState<UserResponse | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -20,12 +26,11 @@ export default function Dashboard() {
         }
         setUser(currentUser);
       } catch (error) {
-        console.error('Failed to get user:', error);
+        console.error("Failed to get user:", error);
       }
     };
     getUser();
   }, []);
-
 
   return (
     <DashboardLayout>
@@ -52,27 +57,35 @@ export default function Dashboard() {
                   <Link href="/dashboard/chat">
                     <CardHeader>
                       <CardTitle className="text-lg">AI Chat</CardTitle>
-                      <CardDescription>Chat with AI assistant for help and information</CardDescription>
+                      <CardDescription>
+                        Chat with AI assistant for help and information
+                      </CardDescription>
                     </CardHeader>
                   </Link>
                 </Card>
-                {user?.role !== 'ADMIN' && (
-                <Card className="hover:bg-accent cursor-pointer transition-colors">
-                  <Link href="/dashboard/knowledge-base">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Knowledge Base</CardTitle>
-                      <CardDescription>Access and manage knowledge bases</CardDescription>
-                    </CardHeader>
-                  </Link>
-                </Card>
+                {user?.role !== "ADMIN" && (
+                  <Card className="hover:bg-accent cursor-pointer transition-colors">
+                    <Link href="/dashboard/knowledge-base">
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          Knowledge Base
+                        </CardTitle>
+                        <CardDescription>
+                          Access and manage knowledge bases
+                        </CardDescription>
+                      </CardHeader>
+                    </Link>
+                  </Card>
                 )}
-                {user?.role === 'ADMIN' && (
+                {user?.role === "ADMIN" && (
                   <>
                     <Card className="hover:bg-accent cursor-pointer transition-colors">
                       <Link href="/dashboard/admin/users">
                         <CardHeader>
                           <CardTitle className="text-lg">Users Panel</CardTitle>
-                          <CardDescription>Manage users settings</CardDescription>
+                          <CardDescription>
+                            Manage users settings
+                          </CardDescription>
                         </CardHeader>
                       </Link>
                     </Card>
@@ -80,7 +93,9 @@ export default function Dashboard() {
                       <Link href="/dashboard/knowledge-base">
                         <CardHeader>
                           <CardTitle className="text-lg">KB Admin</CardTitle>
-                          <CardDescription>Manage knowledge bases and documents</CardDescription>
+                          <CardDescription>
+                            Manage knowledge bases and documents
+                          </CardDescription>
                         </CardHeader>
                       </Link>
                     </Card>
