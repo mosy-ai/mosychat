@@ -165,6 +165,77 @@ interface UserListParams {
   is_active?: boolean;
 }
 
+// Agent/Chat interfaces
+interface ContentItem {
+  type: string;
+  text: string;
+}
+
+interface Message {
+  role: string;
+  content: ContentItem[];
+}
+
+interface ChatRequest {
+  messages: Message[];
+  tools?: object;
+  unstable_assistantMessageId?: string;
+  runConfig?: object;
+  state?: object;
+}
+
+interface ChatResponse {
+  content: ContentItem[];
+}
+
+// Message interfaces
+interface MessageCreateDto {
+  conversation_id: string;
+  role: string;
+  content: string;
+}
+
+interface MessageResponse {
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+  feedback?: FeedbackResponse[] | null;
+  feedback_count?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MessageUpdateDto {
+  role?: string;
+  content?: string;
+}
+
+// Feedback interface (stub, expand as needed)
+interface FeedbackResponse {
+  // ...define fields if needed...
+}
+
+// Conversation interfaces
+interface ConversationCreateDto {
+  title: string;
+  id: string;
+}
+
+interface ConversationResponse {
+  id: string;
+  user_id: string;
+  title: string;
+  messages?: MessageResponse[] | null;
+  message_count?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ConversationUpdateDto {
+  title?: string;
+}
+
 // API Client class
 class ApiClient {
   private baseURL: string;
@@ -394,7 +465,103 @@ class ApiClient {
       method: "DELETE",
     });
   }
+
+  // Agent chat (non-streaming)
+  async agentChat(data: ChatRequest): Promise<ChatResponse> {
+    return this.request<ChatResponse>("/api/v1/agents/chat", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Agent chat (streaming)
+  async agentChatStream(data: ChatRequest): Promise<Response> {
+    // Returns the raw fetch Response for streaming
+    const url = `${this.baseURL}/api/v1/agents/chat/stream`;
+    const headers: Record<string, string> = this.getHeaders();
+    return fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Message endpoints
+  async listMessages(params: { conversation_id?: string; page?: number; size?: number } = {}): Promise<BaseResponse<MessageResponse[]>> {
+    const searchParams = new URLSearchParams();
+    if (params.conversation_id) searchParams.append("conversation_id", params.conversation_id);
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.size) searchParams.append("size", params.size.toString());
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return this.request<BaseResponse<MessageResponse[]>>(`/api/v1/messages${query}`);
+  }
+
+  async createMessage(data: MessageCreateDto): Promise<MessageResponse> {
+    return this.request<MessageResponse>("/api/v1/messages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMessage(message_id: string): Promise<MessageResponse> {
+    return this.request<MessageResponse>(`/api/v1/messages/${message_id}`);
+  }
+
+  async updateMessage(message_id: string, data: MessageUpdateDto): Promise<MessageResponse> {
+    return this.request<MessageResponse>(`/api/v1/messages/${message_id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteMessage(message_id: string): Promise<MessageResponse> {
+    return this.request<MessageResponse>(`/api/v1/messages/${message_id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Conversation endpoints
+  async listConversations(params: { page?: number; size?: number } = {}): Promise<BaseResponse<ConversationResponse[]>> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.size) searchParams.append("size", params.size.toString());
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return this.request<BaseResponse<ConversationResponse[]>>(`/api/v1/conversations${query}`);
+  }
+
+  async createConversation(data: ConversationCreateDto): Promise<ConversationResponse> {
+    return this.request<ConversationResponse>("/api/v1/conversations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getConversation(conversation_id: string): Promise<ConversationResponse> {
+    return this.request<ConversationResponse>(`/api/v1/conversations/${conversation_id}`);
+  }
+
+  async updateConversation(conversation_id: string, data: ConversationUpdateDto): Promise<ConversationResponse> {
+    return this.request<ConversationResponse>(`/api/v1/conversations/${conversation_id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteConversation(conversation_id: string): Promise<ConversationResponse> {
+    return this.request<ConversationResponse>(`/api/v1/conversations/${conversation_id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async createFeedback(data: { id: string, message_id: string; rating: number }): Promise<FeedbackResponse> {
+    return this.request<FeedbackResponse>("/api/v1/feedback", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
 }
+
+
 
 // Export the client instance and types
 export const apiClient = new ApiClient();
@@ -417,5 +584,19 @@ export type {
   CreateUserRequest,
   UpdateUserRequest,
   UserListParams,
+  // Agent/Chat types
+  ContentItem,
+  Message,
+  ChatRequest,
+  ChatResponse,
+  // Message types
+  MessageCreateDto,
+  MessageResponse,
+  MessageUpdateDto,
+  FeedbackResponse,
+  // Conversation types
+  ConversationCreateDto,
+  ConversationResponse,
+  ConversationUpdateDto,
 };
 export { DocumentStatus, ApiClient };
