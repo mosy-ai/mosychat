@@ -1,17 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { v5 as uuidv5, NIL } from "uuid";
 import {
   useLocalThreadRuntime,
   unstable_useRemoteThreadListRuntime as useRemoteThreadListRuntime,
   useThreadListItem,
   RuntimeAdapterProvider,
-  AssistantRuntimeProvider,
   ThreadHistoryAdapter,
+  AssistantRuntimeProvider,
   FeedbackAdapter,
 } from "@assistant-ui/react";
-import { MyModelAdapter } from "@/components/assistannt-ui-runtime/ChatProvider";
 import { apiClient } from "@/lib/api-client";
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
@@ -19,22 +18,75 @@ const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 const feedbackAdapter: FeedbackAdapter = {
   async submit(feedback) {
     apiClient.createFeedback({
-      id: feedback.message.id,
-      message_id: feedback.message.id,
+      message_id: uuidv5(feedback.message.id || NIL, NAMESPACE),
       rating: feedback.type === "positive" ? 1 : 0,
+      comment: "",
     });
-    console.log("Feedback submitted:", feedback);
   },
 };
 
+
 export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
+  const refRemoteId = useRef("");
   const runtime = useRemoteThreadListRuntime({
     runtimeHook: () =>
-      useLocalThreadRuntime(MyModelAdapter, {
-        adapters: {
-          feedback: feedbackAdapter,
+      useLocalThreadRuntime(
+        {
+          async *run({ messages, runConfig }) {
+            while (!refRemoteId.current) {
+              console.warn("Waiting for threadId to be set...");
+              await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+            const payload = {
+              messages: messages.map((msg) => ({
+                ...msg,
+                conversation_id: refRemoteId.current,
+              })),
+            };
+
+            // Use the agentChatStream method from apiClient
+            const response = await apiClient.agentChatStream(payload as any);
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const stream = response.body?.getReader();
+
+            let text = "";
+            function decodeUnicodeEscapes(str: string): string {
+              return str
+                .replace(/\\u([\dA-Fa-f]{4})/g, (_, hex) =>
+                  String.fromCharCode(parseInt(hex, 16))
+                )
+                .replace(/\\n/g, "\n");
+            }
+            if (stream) {
+              while (true) {
+                const { done, value } = await stream.read();
+                if (done) break;
+                const decoder = new TextDecoder();
+                let chunk = decoder.decode(value, { stream: true });
+
+                // You may need to adjust parsing depending on your backend's stream format
+                let chunk_parts = chunk.split('0:"');
+                let cleared = "";
+                for (let i = 1; i < chunk_parts.length; i++) {
+                  let part = chunk_parts[i];
+                  part = decodeUnicodeEscapes(part.slice(0, -2));
+                  cleared += part;
+                }
+                text += cleared;
+                yield { content: [{ type: "text", text: text }] };
+              }
+            }
+          },
         },
-      }),
+        {
+          adapters: {
+            feedback: feedbackAdapter,
+          },
+        }
+      ),
     adapter: {
       async list() {
         const res = await apiClient.listConversations();
@@ -52,6 +104,11 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
         apiClient.createConversation({
           title: "New Chat",
           id: threadId,
+        });
+        runtime.thread.composer.setRunConfig({
+          custom: {
+            threadId: threadId,
+          },
         });
         return { remoteId: threadId, externalId: threadId };
       },
@@ -78,8 +135,9 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
       unstable_Provider: ({ children }) => {
         const threadListItem = useThreadListItem();
         const remoteId = threadListItem.remoteId;
-        const localId = threadListItem.id;
-
+        useEffect(() => {
+          refRemoteId.current = remoteId || "";
+        }, [remoteId]);
         // Message history adapter for each thread
         const history = useMemo<ThreadHistoryAdapter>(
           () => ({
@@ -109,16 +167,21 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
             },
 
             async append(message: any) {
-              const rId = remoteId || uuidv5(localId, NAMESPACE);
+              while (!refRemoteId.current) {
+                console.warn("Waiting for remoteId to be set...");
+                console.log(refRemoteId.current);
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
               message = message.message;
               await apiClient.createMessage({
-                conversation_id: rId,
+                id: uuidv5(message.id || NIL, NAMESPACE),
+                conversation_id: refRemoteId.current,
                 role: message.role,
                 content: message.content[0]?.text || "",
               });
             },
           }),
-          [remoteId, localId]
+          [remoteId]
         );
 
         const adapters = useMemo(() => ({ history }), [history]);

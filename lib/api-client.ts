@@ -190,6 +190,7 @@ interface ChatResponse {
 
 // Message interfaces
 interface MessageCreateDto {
+  id?: string;
   conversation_id: string;
   role: string;
   content: string;
@@ -211,9 +212,15 @@ interface MessageUpdateDto {
   content?: string;
 }
 
+interface FeedbackRequest {
+  message_id: string;
+  rating: number; // 1 for positive, 0 for negative
+  comment: string;
+}
+
 // Feedback interface (stub, expand as needed)
 interface FeedbackResponse {
-  // ...define fields if needed...
+  
 }
 
 // Conversation interfaces
@@ -553,7 +560,7 @@ class ApiClient {
     });
   }
 
-  async createFeedback(data: { id: string, message_id: string; rating: number }): Promise<FeedbackResponse> {
+  async createFeedback(data: FeedbackRequest): Promise<FeedbackResponse> {
     return this.request<FeedbackResponse>("/api/v1/feedback", {
       method: "POST",
       body: JSON.stringify(data),

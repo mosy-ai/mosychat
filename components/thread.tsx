@@ -5,6 +5,8 @@ import {
   ErrorPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  useMessage,
+  getExternalStoreMessages,
 } from "@assistant-ui/react";
 import type { FC } from "react";
 import {
@@ -27,7 +29,6 @@ import { MarkdownText } from "@/components/markdown-text";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
 
 export const Thread: FC = () => {
-  console.log("Messages:", ThreadPrimitive.Messages);
   return (
     <ThreadPrimitive.Root
       className="bg-background box-border flex h-full flex-col overflow-hidden"
@@ -231,6 +232,8 @@ const MessageError: FC = () => {
 };
 
 const AssistantActionBar: FC = () => {
+  const originalMessage = useMessage(getExternalStoreMessages) 
+  console.warn("Original Message:", originalMessage);
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
