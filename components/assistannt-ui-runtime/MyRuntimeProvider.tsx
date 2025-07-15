@@ -17,10 +17,18 @@ const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
 const feedbackAdapter: FeedbackAdapter = {
   async submit(feedback) {
+    // open prompt to get user comment
+    
+    const comment = prompt("Please provide your feedback comment:");
+    if (comment === null) {
+      return; // User cancelled the prompt
+    }
+
+  
     apiClient.createFeedback({
       message_id: uuidv5(feedback.message.id || NIL, NAMESPACE),
       rating: feedback.type === "positive" ? 1 : 0,
-      comment: "",
+      comment: comment,
     });
   },
 };
@@ -101,7 +109,7 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
 
       async initialize(_threadId: string) {
         const threadId = uuidv5(_threadId, NAMESPACE);
-        apiClient.createConversation({
+        await apiClient.createConversation({
           title: "New Chat",
           id: threadId,
         });
@@ -118,7 +126,9 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
       },
 
       async generateTitle(remoteId: string, messages: any[]) {
-        return new ReadableStream();
+        return new ReadableStream(
+          
+        );
       },
 
       async archive(remoteId: string) {
