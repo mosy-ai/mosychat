@@ -171,12 +171,15 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
                 await new Promise((resolve) => setTimeout(resolve, 100));
               }
               message = message.message;
-              await apiClient.createMessage({
+
+                await apiClient.createMessage({
                 id: uuidv5(message.id || NIL, NAMESPACE),
                 conversation_id: refRemoteId.current,
                 role: message.role,
                 content: message.content[0]?.text || "",
               });
+
+              
             },
           }),
           [remoteId]
