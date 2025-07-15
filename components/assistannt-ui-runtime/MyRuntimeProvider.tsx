@@ -17,18 +17,14 @@ const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
 const feedbackAdapter: FeedbackAdapter = {
   async submit(feedback) {
-    // open prompt to get user comment
-    
-    const comment = prompt("Please provide your feedback comment:");
-    if (comment === null) {
-      return; // User cancelled the prompt
+    let comment = "";
+    if (feedback.type !== "positive") {
+      comment = window.prompt("Hãy cung cấp nhận xét của bạn:", "") || "";
     }
-
-  
     apiClient.createFeedback({
-      message_id: uuidv5(feedback.message.id || NIL, NAMESPACE),
+      message_id: feedback.message.id.length >= 14 ? feedback.message.id : uuidv5(feedback.message.id || NIL, NAMESPACE),
       rating: feedback.type === "positive" ? 1 : 0,
-      comment: comment,
+      comment: comment || "",
     });
   },
 };
