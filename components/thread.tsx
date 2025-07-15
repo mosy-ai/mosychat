@@ -6,9 +6,10 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useMessage,
-  getExternalStoreMessages,
+  useMessageRuntime,
 } from "@assistant-ui/react";
 import type { FC } from "react";
+import { useState, useCallback } from "react";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -20,13 +21,13 @@ import {
   SendHorizontalIcon,
   ThumbsUpIcon,
   ThumbsDownIcon,
-
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/markdown-text";
 import { TooltipIconButton } from "@/components/tooltip-icon-button";
+import { FeedbackPopup } from "./FeedbackPopup";
 
 export const Thread: FC = () => {
   return (
@@ -79,9 +80,7 @@ const ThreadWelcome: FC = () => {
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
         <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">
-            How can I help you today?
-          </p>
+          <p className="mt-4 font-medium">How can I help you today?</p>
         </div>
         <ThreadWelcomeSuggestions />
       </div>
@@ -232,41 +231,84 @@ const MessageError: FC = () => {
 };
 
 const AssistantActionBar: FC = () => {
-  const originalMessage = useMessage(getExternalStoreMessages) 
-  console.warn("Original Message:", originalMessage);
+  const [feedbackPopupOpen, setFeedbackPopupOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<"positive" | "negative">(
+    "positive"
+  );
+  const messageRuntime = useMessageRuntime();
+  const originalMessage = useMessage();
+  const handleFeedbackClick = useCallback((type: "positive" | "negative") => {
+    setFeedbackType(type);
+    setFeedbackPopupOpen(true);
+  }, []);
+
+  const handleFeedbackSubmit = useCallback(
+    async (comment: string) => {
+      try {
+        apiClient.createFeedback({
+          message_id: originalMessage.id,
+          rating: feedbackType === "positive" ? 1 : 0,
+          comment,
+        });
+        setFeedbackPopupOpen(false);
+        setFeedbackType("positive"); // Reset to default after submission
+      } catch (error) {
+        console.error("Error submitting feedback:", error);
+      }
+    },
+    [messageRuntime, feedbackType]
+  );
+
+  const handleFeedbackClose = useCallback(() => {
+    setFeedbackPopupOpen(false);
+  }, []);
+
   return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      autohideFloat="single-branch"
-      className="text-muted-foreground flex gap-1 col-start-3 row-start-2 -ml-1 data-[floating]:bg-background data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
-    >
-      <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
-          <MessagePrimitive.If copied>
-            <CheckIcon />
-          </MessagePrimitive.If>
-          <MessagePrimitive.If copied={false}>
-            <CopyIcon />
-          </MessagePrimitive.If>
-        </TooltipIconButton>
-      </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
-      <ActionBarPrimitive.FeedbackPositive asChild>
-        <TooltipIconButton tooltip="Like">
+    <>
+      <ActionBarPrimitive.Root
+        hideWhenRunning
+        autohide="not-last"
+        autohideFloat="single-branch"
+        className="text-muted-foreground flex gap-1 col-start-3 row-start-2 -ml-1 data-[floating]:bg-background data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
+      >
+        <ActionBarPrimitive.Copy asChild>
+          <TooltipIconButton tooltip="Copy">
+            <MessagePrimitive.If copied>
+              <CheckIcon />
+            </MessagePrimitive.If>
+            <MessagePrimitive.If copied={false}>
+              <CopyIcon />
+            </MessagePrimitive.If>
+          </TooltipIconButton>
+        </ActionBarPrimitive.Copy>
+        <ActionBarPrimitive.Reload asChild>
+          <TooltipIconButton tooltip="Refresh">
+            <RefreshCwIcon />
+          </TooltipIconButton>
+        </ActionBarPrimitive.Reload>
+
+        {/* Custom feedback buttons that open popup */}
+        <TooltipIconButton
+          tooltip="Like"
+          onClick={() => handleFeedbackClick("positive")}
+        >
           <ThumbsUpIcon />
         </TooltipIconButton>
-      </ActionBarPrimitive.FeedbackPositive>
-      <ActionBarPrimitive.FeedbackNegative asChild>
-        <TooltipIconButton tooltip="Dislike">
+        <TooltipIconButton
+          tooltip="Dislike"
+          onClick={() => handleFeedbackClick("negative")}
+        >
           <ThumbsDownIcon />
         </TooltipIconButton>
-      </ActionBarPrimitive.FeedbackNegative>
-    </ActionBarPrimitive.Root>
+      </ActionBarPrimitive.Root>
+
+      <FeedbackPopup
+        isOpen={feedbackPopupOpen}
+        onClose={handleFeedbackClose}
+        onSubmit={handleFeedbackSubmit}
+        feedbackType={feedbackType}
+      />
+    </>
   );
 };
 
@@ -277,7 +319,10 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
   return (
     <BranchPickerPrimitive.Root
       hideWhenSingleBranch
-      className={cn("text-muted-foreground inline-flex items-center text-xs", className)}
+      className={cn(
+        "text-muted-foreground inline-flex items-center text-xs",
+        className
+      )}
       {...rest}
     >
       <BranchPickerPrimitive.Previous asChild>

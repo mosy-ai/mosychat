@@ -8,15 +8,16 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const { messages, system, tools } = await req.json();
 
-  const result = streamText({
-    model: openai("gpt-4o"),
-    messages,
-    toolCallStreaming: true,
-    system,
-    tools: {
-      ...frontendTools(tools),
-    },
-  });
+  // const result = streamText({
+  //   model: openai("gpt-4o"),
+  //   messages,
+  //   toolCallStreaming: true,
+  //   system,
+  //   st
+  //   tools: {
+  //     ...frontendTools(tools),
+  //   },
+  // });
 
-  return result.toDataStreamResponse();
+  // return result.toDataStreamResponse();
 }

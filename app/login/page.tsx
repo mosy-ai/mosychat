@@ -52,7 +52,7 @@ export default function Login() {
                   required
                   placeholder="Email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.trim())}
                 />
               </div>
               <div>
@@ -63,7 +63,7 @@ export default function Login() {
                   required
                   placeholder="Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.trim())}
                 />
               </div>
             </div>

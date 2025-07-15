@@ -243,6 +243,16 @@ interface ConversationUpdateDto {
   title?: string;
 }
 
+// Generate Conversation Title interfaces
+interface GenerateTitleRequest {
+  conversation_id: string;
+  messages: string[];
+}
+
+interface GenerateTitleResponse {
+  title: string;
+}
+
 // API Client class
 class ApiClient {
   private baseURL: string;
@@ -566,6 +576,15 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  async generateConversationTitle(
+    data: GenerateTitleRequest
+  ): Promise<GenerateTitleResponse> {
+    return this.request<GenerateTitleResponse>("/api/v1/conversations/generate-title", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 
@@ -605,5 +624,8 @@ export type {
   ConversationCreateDto,
   ConversationResponse,
   ConversationUpdateDto,
+  // Generate Conversation Title types
+  GenerateTitleRequest,
+  GenerateTitleResponse,
 };
 export { DocumentStatus, ApiClient };

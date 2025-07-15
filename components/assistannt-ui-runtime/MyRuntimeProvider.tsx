@@ -10,25 +10,15 @@ import {
   ThreadHistoryAdapter,
   AssistantRuntimeProvider,
   FeedbackAdapter,
+  
 } from "@assistant-ui/react";
 import { apiClient } from "@/lib/api-client";
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
 const feedbackAdapter: FeedbackAdapter = {
-  async submit(feedback) {
-    let comment = "";
-    if (feedback.type !== "positive") {
-      comment = window.prompt("Hãy cung cấp nhận xét của bạn:", "") || "";
-    }
-    apiClient.createFeedback({
-      message_id: feedback.message.id.length >= 14 ? feedback.message.id : uuidv5(feedback.message.id || NIL, NAMESPACE),
-      rating: feedback.type === "positive" ? 1 : 0,
-      comment: comment || "",
-    });
-  },
+  async submit(feedback) {feedback},
 };
-
 
 export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
   const refRemoteId = useRef("");
@@ -105,7 +95,7 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
 
       async initialize(_threadId: string) {
         const threadId = uuidv5(_threadId, NAMESPACE);
-        await apiClient.createConversation({
+        apiClient.createConversation({
           title: "New Chat",
           id: threadId,
         });
@@ -122,9 +112,15 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
       },
 
       async generateTitle(remoteId: string, messages: any[]) {
-        return new ReadableStream(
-          
-        );
+        const title_req = await apiClient.generateConversationTitle({
+          conversation_id: remoteId,
+          messages: messages.map((msg) => msg.content[0]?.text || ""),
+        })
+        const title = title_req.title;
+        if (title) {
+          await apiClient.updateConversation(remoteId, { title });
+        }
+        return new ReadableStream();
       },
 
       async archive(remoteId: string) {
