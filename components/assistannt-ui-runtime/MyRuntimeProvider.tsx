@@ -105,11 +105,7 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
           title: "New Chat",
           id: threadId,
         });
-        runtime.thread.composer.setRunConfig({
-          custom: {
-            threadId: threadId,
-          },
-        });
+        refRemoteId.current = threadId;
         return { remoteId: threadId, externalId: threadId };
       },
 
