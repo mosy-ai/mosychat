@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { UserResponse } from "@/lib/api-client";
 import { verifyAndGetMe } from "@/lib/custom-func";
 
-import { ThreadList } from "@/components/thread-list";
-import { Thread } from "@/components/thread";
-import { MyRuntimeProvider } from "@/components/assistannt-ui-runtime/MyRuntimeProvider";
+import { ThreadList } from "@/components/assistant-ui/thread-list";
+import { Thread } from "@/components/assistant-ui/thread";
+import { RuntimeProvider } from "@/components/assistant-ui/provider/RuntimeProvider";
 
 export default function Dashboard() {
   const [user, setUser] = useState<UserResponse | null>(null);
@@ -29,12 +29,12 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <MyRuntimeProvider>
+      <RuntimeProvider>
         <div className="grid h-[85vh] grid-cols-[200px_1fr]">
           <ThreadList />
           <Thread />
         </div>
-      </MyRuntimeProvider>
+      </RuntimeProvider>
     </DashboardLayout>
   );
 }

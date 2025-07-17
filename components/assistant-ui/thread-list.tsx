@@ -1,19 +1,61 @@
 import type { FC } from "react";
+import { useState } from "react";
 import {
   ThreadListItemPrimitive,
   ThreadListPrimitive,
 } from "@assistant-ui/react";
-import { ArchiveIcon, PlusIcon, Trash2 } from "lucide-react";
+import { ArchiveIcon, PlusIcon, Trash2, ChevronDown, ChevronRight,  } from "lucide-react";
+import { IconSelector } from"@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
-import { TooltipIconButton } from "@/components/tooltip-icon-button";
+import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export const ThreadList: FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <ThreadListPrimitive.Root className="flex flex-col items-stretch gap-1.5">
-      <ThreadListNew />
-      <ThreadListItems />
-    </ThreadListPrimitive.Root>
+    <div className="flex flex-col items-stretch gap-1.5">
+      {/* Mobile Collapsible Version */}
+      <div className="md:hidden">
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <CollapsibleTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-between px-3 py-2 text-start"
+            >
+              <span className="flex items-center gap-2">
+                <IconSelector className="h-4 w-4" />
+                Threads
+              </span>
+              {isOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1.5 pt-1.5 absolute bg-white shadow-xl p-2 rounded-lg z-50">
+            <ThreadListPrimitive.Root className="flex flex-col items-stretch gap-1.5">
+              <ThreadListNew />
+              <ThreadListItems />
+            </ThreadListPrimitive.Root>
+          </CollapsibleContent>
+        </Collapsible>
+      </div>
+
+      {/* Desktop Version (always visible) */}
+      <div className="hidden md:flex md:flex-col md:items-stretch md:gap-1.5">
+        <ThreadListPrimitive.Root className="flex flex-col items-stretch gap-1.5">
+          <ThreadListNew />
+          <ThreadListItems />
+        </ThreadListPrimitive.Root>
+      </div>
+    </div>
   );
 };
 

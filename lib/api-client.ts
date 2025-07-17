@@ -587,8 +587,6 @@ class ApiClient {
   }
 }
 
-
-
 // Export the client instance and types
 export const apiClient = new ApiClient();
 export type {

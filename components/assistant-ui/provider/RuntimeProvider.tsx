@@ -10,17 +10,21 @@ import {
   ThreadHistoryAdapter,
   AssistantRuntimeProvider,
   FeedbackAdapter,
-  
+  CompositeAttachmentAdapter,
+  SimpleImageAttachmentAdapter,
+  SimpleTextAttachmentAdapter,
 } from "@assistant-ui/react";
 import { apiClient } from "@/lib/api-client";
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
 const feedbackAdapter: FeedbackAdapter = {
-  async submit(feedback) {feedback},
+  async submit(feedback) {
+    feedback;
+  },
 };
 
-export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
+export function RuntimeProvider({ children }: { children: React.ReactNode }) {
   const refRemoteId = useRef("");
   const runtime = useRemoteThreadListRuntime({
     runtimeHook: () =>
@@ -78,6 +82,10 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
         {
           adapters: {
             feedback: feedbackAdapter,
+            attachments: new CompositeAttachmentAdapter([
+              new SimpleImageAttachmentAdapter(),
+              new SimpleTextAttachmentAdapter(),
+            ]),
           },
         }
       ),
@@ -115,7 +123,7 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
         const title_req = await apiClient.generateConversationTitle({
           conversation_id: remoteId,
           messages: messages.map((msg) => msg.content[0]?.text || ""),
-        })
+        });
         const title = title_req.title;
         if (title) {
           await apiClient.updateConversation(remoteId, { title });
@@ -132,7 +140,9 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
       },
       unstable_Provider: ({ children }) => {
         const threadListItem = useThreadListItem();
+        console.log("Thread List Item:", threadListItem);
         const remoteId = threadListItem.remoteId;
+        const threadId = threadListItem.id;
         useEffect(() => {
           refRemoteId.current = remoteId || "";
         }, [remoteId]);
@@ -154,6 +164,7 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
                       id: m.id,
                       role: m.role,
                       content: [{ type: "text", text: m.content }],
+                      attachments: [],
                       threadId: remoteId,
                       status: "regular",
                       metadata: {},
@@ -165,21 +176,19 @@ export function MyRuntimeProvider({ children }: { children: React.ReactNode }) {
             },
 
             async append(message: any) {
-              while (!refRemoteId.current) {
-                console.warn("Waiting for remoteId to be set...");
-                console.log(refRemoteId.current);
-                await new Promise((resolve) => setTimeout(resolve, 100));
-              }
-              message = message.message;
-
+              const newMessage = message.message;
+              try {
                 await apiClient.createMessage({
-                id: uuidv5(message.id || NIL, NAMESPACE),
-                conversation_id: refRemoteId.current,
-                role: message.role,
-                content: message.content[0]?.text || "",
-              });
-
-              
+                  id: uuidv5(newMessage.id || NIL, NAMESPACE),
+                  conversation_id: refRemoteId.current || uuidv5(threadId, NAMESPACE),
+                  role: newMessage.role,
+                  content: newMessage.content[0]?.text || "",
+                });
+              } catch (error) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                console.warn("Retrying message append");
+                this.append(message);
+              }
             },
           }),
           [remoteId]
