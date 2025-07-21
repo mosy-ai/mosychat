@@ -140,7 +140,6 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
       },
       unstable_Provider: ({ children }) => {
         const threadListItem = useThreadListItem();
-        console.log("Thread List Item:", threadListItem);
         const remoteId = threadListItem.remoteId;
         const threadId = threadListItem.id;
         useEffect(() => {
@@ -186,7 +185,6 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                 });
               } catch (error) {
                 await new Promise((resolve) => setTimeout(resolve, 500));
-                console.warn("Retrying message append");
                 this.append(message);
               }
             },
