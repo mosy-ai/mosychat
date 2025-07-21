@@ -30,7 +30,7 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
     runtimeHook: () =>
       useLocalThreadRuntime(
         {
-          async *run({ messages, runConfig }) {
+          async *run({ messages }) {
             while (!refRemoteId.current) {
               console.warn("Waiting for threadId to be set...");
               await new Promise((resolve) => setTimeout(resolve, 100));

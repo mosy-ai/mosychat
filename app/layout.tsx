@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "@/app/globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ChatMosyAI",
+  title: "ChatMosy",
   description:
     "MosyAI helps you get answers, find inspiration and be more productive. It is free to use and easy to try. Just ask and ChatMosyAI can help with writing, learning, brainstorming and more.",
 };

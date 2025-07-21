@@ -3,9 +3,9 @@ import * as React from "react";
 import {
   IconMessage2,
   IconDatabase,
-  IconInnerShadowTop,
   IconUsersGroup,
   IconUsers,
+  IconRobot,
 } from "@tabler/icons-react";
 import { NavAdminPanel } from "@/components/vietrux-ui/nav-admin";
 import { NavMain } from "@/components/vietrux-ui/nav-main";
@@ -20,38 +20,34 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { UserResponse } from "@/lib/api-client";
+import Image from "next/image";
 const data = {
   navMain: [
     {
       name: "Chat Mosy",
-      url: "/test/dashboard",
+      url: "/dashboard",
       icon: IconMessage2,
     },
     {
       name: "Knowledge Base",
-      url: "/test/dashboard/knowledge-base",
+      url: "/dashboard/knowledge-base",
       icon: IconDatabase,
     },
   ],
   adminPanel: [
     {
       name: "Agents",
-      url: "/test/dashboard/agents",
-      icon: IconDatabase,
-    },
-    {
-      name: "Knowledge Base", 
-      url: "/test/dashboard/knowledge-base",
-      icon: IconDatabase,
+      url: "/dashboard/agents",
+      icon: IconRobot,
     },
     {
       name: "Users",
-      url: "/test/dashboard/users",
+      url: "/dashboard/users",
       icon: IconUsers,
     },
     {
         name: "Groups",
-        url: "/test/dashboard/groups",
+        url: "/dashboard/groups",
         icon: IconUsersGroup,
     }
   ],
@@ -70,7 +66,12 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
+                <Image
+                  src="/Mosy-Light.png"
+                  alt="Logo"
+                  width={32}
+                  height={32}
+                />
                 <span className="text-base font-semibold">Mosy Inc.</span>
               </a>
             </SidebarMenuButton>

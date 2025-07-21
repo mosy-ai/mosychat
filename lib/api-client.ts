@@ -1,6 +1,6 @@
 // BASE_URL = get from environment variable or hardcoded for development
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8696/";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8696";
 
 // Base response interface
 interface BaseResponse<T = any> {
@@ -8,10 +8,9 @@ interface BaseResponse<T = any> {
   message: string;
   data: T;
   pages?: {
-    current: number;
     total: number;
-    per_page: number;
-    total_items: number;
+    page: number;
+    limit: number;
   } | null;
 }
 
@@ -93,7 +92,7 @@ interface CreateDocumentRequest {
 }
 
 interface UpdateDocumentRequest {
-  tags?: string[] | null;
+  document_tags?: string[] | null;
 }
 
 // Auth interfaces
@@ -121,7 +120,7 @@ interface CurrentUserResponse {
 interface UserResponse {
   id: string;
   email: string;
-  name?: string | null;
+  name: string | null;
   document_count?: number | null;
   is_active?: boolean | null;
   created_at: string;
@@ -165,7 +164,81 @@ interface UserListParams {
   is_active?: boolean;
 }
 
-// Agent/Chat interfaces
+// Group interfaces
+interface GroupResponse {
+  id: string;
+  name: string;
+  description: string;
+  user_ids?: string[] | null;
+  users?: UserResponse[] | null;
+  user_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface GroupCreateDto {
+  name: string;
+  description: string;
+  user_ids?: string[] | null;
+}
+
+interface GroupUpdateDto {
+  name?: string | null;
+  description?: string | null;
+  user_ids?: string[] | null;
+}
+
+interface GroupListParams {
+  page?: number;
+  limit?: number;
+  order_by?: string;
+  order?: "asc" | "desc";
+}
+
+// Agent interfaces
+interface AgentResponse {
+  id: string;
+  name: string;
+  description: string;
+  created_by_id: string;
+  created_by?: UserResponse | null;
+  user_ids: string[];
+  group_ids: string[];
+  knowledge_base_ids: string[];
+  users: UserResponse[];
+  groups: any[]; // Or define a specific GroupInAgentResponse interface
+  knowledge_bases: any[]; // Or define a specific KBInAgentResponse interface
+  user_count: number;
+  group_count: number;
+  knowledge_base_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AgentCreateDto {
+  name: string;
+  description: string;
+  user_ids?: string[] | null;
+  group_ids?: string[] | null;
+  knowledge_base_ids?: string[] | null;
+}
+
+interface AgentUpdateDto {
+  name?: string | null;
+  description?: string | null;
+  user_ids?: string[] | null;
+  group_ids?: string[] | null;
+  knowledge_base_ids?: string[] | null;
+}
+
+interface AgentListParams {
+  page?: number;
+  limit?: number;
+  order_by?: string;
+  order?: "asc" | "desc";
+}
+
+// Agent Chat interfaces
 interface ContentItem {
   type: string;
   text: string;
@@ -185,7 +258,7 @@ interface ChatRequest {
 }
 
 interface ChatResponse {
-  content: ContentItem[];
+  content: string;
 }
 
 // Message interfaces
@@ -212,21 +285,25 @@ interface MessageUpdateDto {
   content?: string;
 }
 
-interface FeedbackRequest {
+interface FeedbackCreateDto {
   message_id: string;
-  rating: number; // 1 for positive, 0 for negative
-  comment: string;
+  rating: number;
+  comment?: string;
 }
 
-// Feedback interface (stub, expand as needed)
 interface FeedbackResponse {
-  
+  id: string;
+  message_id: string;
+  rating?: number | null;
+  comment?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Conversation interfaces
 interface ConversationCreateDto {
   title: string;
-  id: string;
+  id?: string;
 }
 
 interface ConversationResponse {
@@ -246,7 +323,7 @@ interface ConversationUpdateDto {
 // Generate Conversation Title interfaces
 interface GenerateTitleRequest {
   conversation_id: string;
-  messages: string[];
+  messages: any[]; // Matching the schema
 }
 
 interface GenerateTitleResponse {
@@ -293,31 +370,29 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
-
-    return response.json();
+    
+    // Handle cases where the response body might be empty (e.g., 204 No Content)
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      return response.json();
+    }
+    return {} as T;
   }
 
   // Knowledge Base methods
-  async listKnowledgeBases(
-    params: KnowledgeBaseListParams = {}
-  ): Promise<BaseResponse<KnowledgeBase[]>> {
+  async listKnowledgeBases(params: KnowledgeBaseListParams = {}): Promise<BaseResponse<KnowledgeBase[]>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.append("page", params.page.toString());
     if (params.limit) searchParams.append("limit", params.limit.toString());
     if (params.order_by) searchParams.append("order_by", params.order_by);
     if (params.order) searchParams.append("order", params.order);
-
     const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
-    return this.request<BaseResponse<KnowledgeBase[]>>(
-      `/api/v1/knowledge-base${query}`
-    );
+    return this.request<BaseResponse<KnowledgeBase[]>>(`/api/v1/knowledge-base${query}`);
   }
 
-  async createKnowledgeBase(
-    data: CreateKnowledgeBaseRequest
-  ): Promise<BaseResponse<KnowledgeBase>> {
+  async createKnowledgeBase(data: CreateKnowledgeBaseRequest): Promise<BaseResponse<KnowledgeBase>> {
     return this.request<BaseResponse<KnowledgeBase>>("/api/v1/knowledge-base", {
       method: "POST",
       body: JSON.stringify(data),
@@ -325,37 +400,24 @@ class ApiClient {
   }
 
   async getKnowledgeBase(id: string): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>(
-      `/api/v1/knowledge-base/${id}`
-    );
+    return this.request<BaseResponse<KnowledgeBase>>(`/api/v1/knowledge-base/${id}`);
   }
 
-  async updateKnowledgeBase(
-    id: string,
-    data: UpdateKnowledgeBaseRequest
-  ): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>(
-      `/api/v1/knowledge-base/${id}`,
-      {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }
-    );
+  async updateKnowledgeBase(id: string, data: UpdateKnowledgeBaseRequest): Promise<BaseResponse<KnowledgeBase>> {
+    return this.request<BaseResponse<KnowledgeBase>>(`/api/v1/knowledge-base/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
   }
 
-  async deleteKnowledgeBase(id: string): Promise<BaseResponse<KnowledgeBase>> {
-    return this.request<BaseResponse<KnowledgeBase>>(
-      `/api/v1/knowledge-base/${id}`,
-      {
-        method: "DELETE",
-      }
-    );
+  async deleteKnowledgeBase(id: string): Promise<BaseResponse<any>> {
+    return this.request<BaseResponse<any>>(`/api/v1/knowledge-base/${id}`, {
+      method: "DELETE",
+    });
   }
 
   // Document methods
-  async listDocuments(
-    params: DocumentListParams = {}
-  ): Promise<BaseResponse<Document[]>> {
+  async listDocuments(params: DocumentListParams = {}): Promise<BaseResponse<Document[]>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.append("page", params.page.toString());
     if (params.size) searchParams.append("size", params.size.toString());
@@ -366,36 +428,28 @@ class ApiClient {
         searchParams.append("statuses", status)
       );
     }
-
     const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
     return this.request<BaseResponse<Document[]>>(`/api/v1/documents${query}`);
   }
 
-  async createDocument(
-    data: CreateDocumentRequest
-  ): Promise<BaseResponse<Document>> {
+  async createDocument(data: CreateDocumentRequest): Promise<BaseResponse<Document>> {
     const formData = new FormData();
     formData.append("document_dto", data.document_dto);
     formData.append("file", data.file);
-
     const url = `${this.baseURL}/api/v1/documents`;
     const headers: Record<string, string> = {};
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
     }
-    // Don't set Content-Type for FormData, let the browser set it automatically
-
     const response = await fetch(url, {
       method: "POST",
       headers,
       body: formData,
     });
-
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
-
     return response.json();
   }
 
@@ -403,10 +457,7 @@ class ApiClient {
     return this.request<Document>(`/api/v1/documents/${id}`);
   }
 
-  async updateDocument(
-    id: string,
-    data: UpdateDocumentRequest
-  ): Promise<Document> {
+  async updateDocument(id: string, data: UpdateDocumentRequest): Promise<Document> {
     return this.request<Document>(`/api/v1/documents/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
@@ -443,9 +494,7 @@ class ApiClient {
   }
 
   // User methods
-  async listUsers(
-    params: UserListParams = {}
-  ): Promise<BaseResponse<UserResponse[]>> {
+  async listUsers(params: UserListParams = {}): Promise<BaseResponse<UserResponse[]>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.append("page", params.page.toString());
     if (params.size) searchParams.append("size", params.size.toString());
@@ -454,13 +503,12 @@ class ApiClient {
     if (params.order) searchParams.append("order", params.order);
     if (params.is_active !== undefined)
       searchParams.append("is_active", params.is_active.toString());
-
     const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
     return this.request<BaseResponse<UserResponse[]>>(`/api/v1/users/${query}`);
   }
 
   async createUser(data: CreateUserRequest): Promise<UserResponse> {
-    return this.request<UserResponse>("/api/v1/users/", {
+    return this.request<UserResponse>("/api/v1/users", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -483,6 +531,76 @@ class ApiClient {
     });
   }
 
+  // Group methods
+  async listGroups(params: GroupListParams = {}): Promise<BaseResponse<GroupResponse[]>> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.order_by) searchParams.append("order_by", params.order_by);
+    if (params.order) searchParams.append("order", params.order);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return this.request<BaseResponse<GroupResponse[]>>(`/api/v1/groups${query}`);
+  }
+
+  async createGroup(data: GroupCreateDto): Promise<BaseResponse<GroupResponse>> {
+    return this.request<BaseResponse<GroupResponse>>("/api/v1/groups", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getGroup(groupId: string): Promise<BaseResponse<GroupResponse>> {
+    return this.request<BaseResponse<GroupResponse>>(`/api/v1/groups/${groupId}`);
+  }
+
+  async updateGroup(groupId: string, data: GroupUpdateDto): Promise<BaseResponse<GroupResponse>> {
+    return this.request<BaseResponse<GroupResponse>>(`/api/v1/groups/${groupId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteGroup(groupId: string): Promise<BaseResponse<any>> {
+    return this.request<BaseResponse<any>>(`/api/v1/groups/${groupId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Agent CRUD methods
+  async listAgents(params: AgentListParams = {}): Promise<BaseResponse<AgentResponse[]>> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.order_by) searchParams.append("order_by", params.order_by);
+    if (params.order) searchParams.append("order", params.order);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return this.request<BaseResponse<AgentResponse[]>>(`/api/v1/agents${query}`);
+  }
+
+  async createAgent(data: AgentCreateDto): Promise<BaseResponse<AgentResponse>> {
+    return this.request<BaseResponse<AgentResponse>>("/api/v1/agents", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAgent(agentId: string): Promise<BaseResponse<AgentResponse>> {
+    return this.request<BaseResponse<AgentResponse>>(`/api/v1/agents/${agentId}`);
+  }
+
+  async updateAgent(agentId: string, data: AgentUpdateDto): Promise<BaseResponse<AgentResponse>> {
+    return this.request<BaseResponse<AgentResponse>>(`/api/v1/agents/${agentId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAgent(agentId: string): Promise<BaseResponse<AgentResponse>> {
+    return this.request<BaseResponse<AgentResponse>>(`/api/v1/agents/${agentId}`, {
+      method: "DELETE",
+    });
+  }
+
   // Agent chat (non-streaming)
   async agentChat(data: ChatRequest): Promise<ChatResponse> {
     return this.request<ChatResponse>("/api/v1/agents/chat", {
@@ -493,7 +611,6 @@ class ApiClient {
 
   // Agent chat (streaming)
   async agentChatStream(data: ChatRequest): Promise<Response> {
-    // Returns the raw fetch Response for streaming
     const url = `${this.baseURL}/api/v1/agents/chat/stream`;
     const headers: Record<string, string> = this.getHeaders();
     return fetch(url, {
@@ -504,11 +621,11 @@ class ApiClient {
   }
 
   // Message endpoints
-  async listMessages(params: { conversation_id?: string; page?: number; size?: number } = {}): Promise<BaseResponse<MessageResponse[]>> {
+  async listMessages(params: { conversation_id?: string; page?: number; limit?: number } = {}): Promise<BaseResponse<MessageResponse[]>> {
     const searchParams = new URLSearchParams();
     if (params.conversation_id) searchParams.append("conversation_id", params.conversation_id);
     if (params.page) searchParams.append("page", params.page.toString());
-    if (params.size) searchParams.append("size", params.size.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
     const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
     return this.request<BaseResponse<MessageResponse[]>>(`/api/v1/messages${query}`);
   }
@@ -524,24 +641,32 @@ class ApiClient {
     return this.request<MessageResponse>(`/api/v1/messages/${message_id}`);
   }
 
-  async updateMessage(message_id: string, data: MessageUpdateDto): Promise<MessageResponse> {
-    return this.request<MessageResponse>(`/api/v1/messages/${message_id}`, {
+  async updateMessage(message_id: string, data: MessageUpdateDto): Promise<any> {
+    return this.request<any>(`/api/v1/messages/${message_id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteMessage(message_id: string): Promise<MessageResponse> {
-    return this.request<MessageResponse>(`/api/v1/messages/${message_id}`, {
+  async deleteMessage(message_id: string): Promise<any> {
+    return this.request<any>(`/api/v1/messages/${message_id}`, {
       method: "DELETE",
+    });
+  }
+  
+  // Feedback endpoints
+  async createFeedback(data: FeedbackCreateDto): Promise<FeedbackResponse> {
+    return this.request<FeedbackResponse>("/api/v1/feedback", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 
   // Conversation endpoints
-  async listConversations(params: { page?: number; size?: number } = {}): Promise<BaseResponse<ConversationResponse[]>> {
+  async listConversations(params: { page?: number; limit?: number } = {}): Promise<BaseResponse<ConversationResponse[]>> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.append("page", params.page.toString());
-    if (params.size) searchParams.append("size", params.size.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
     const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
     return this.request<BaseResponse<ConversationResponse[]>>(`/api/v1/conversations${query}`);
   }
@@ -557,29 +682,20 @@ class ApiClient {
     return this.request<ConversationResponse>(`/api/v1/conversations/${conversation_id}`);
   }
 
-  async updateConversation(conversation_id: string, data: ConversationUpdateDto): Promise<ConversationResponse> {
-    return this.request<ConversationResponse>(`/api/v1/conversations/${conversation_id}`, {
+  async updateConversation(conversation_id: string, data: ConversationUpdateDto): Promise<any> {
+    return this.request<any>(`/api/v1/conversations/${conversation_id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
-  async deleteConversation(conversation_id: string): Promise<ConversationResponse> {
-    return this.request<ConversationResponse>(`/api/v1/conversations/${conversation_id}`, {
+  async deleteConversation(conversation_id: string): Promise<any> {
+    return this.request<any>(`/api/v1/conversations/${conversation_id}`, {
       method: "DELETE",
     });
   }
 
-  async createFeedback(data: FeedbackRequest): Promise<FeedbackResponse> {
-    return this.request<FeedbackResponse>("/api/v1/feedback", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async generateConversationTitle(
-    data: GenerateTitleRequest
-  ): Promise<GenerateTitleResponse> {
+  async generateConversationTitle(data: GenerateTitleRequest): Promise<GenerateTitleResponse> {
     return this.request<GenerateTitleResponse>("/api/v1/conversations/generate-title", {
       method: "POST",
       body: JSON.stringify(data),
@@ -608,6 +724,16 @@ export type {
   CreateUserRequest,
   UpdateUserRequest,
   UserListParams,
+  // Group types
+  GroupResponse,
+  GroupCreateDto,
+  GroupUpdateDto,
+  GroupListParams,
+  // Agent types
+  AgentResponse,
+  AgentCreateDto,
+  AgentUpdateDto,
+  AgentListParams,
   // Agent/Chat types
   ContentItem,
   Message,
@@ -618,6 +744,7 @@ export type {
   MessageResponse,
   MessageUpdateDto,
   FeedbackResponse,
+  FeedbackCreateDto,
   // Conversation types
   ConversationCreateDto,
   ConversationResponse,
