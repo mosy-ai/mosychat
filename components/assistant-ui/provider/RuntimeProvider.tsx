@@ -11,10 +11,9 @@ import {
   AssistantRuntimeProvider,
   FeedbackAdapter,
   CompositeAttachmentAdapter,
-  SimpleImageAttachmentAdapter,
-  SimpleTextAttachmentAdapter,
 } from "@assistant-ui/react";
 import { apiClient } from "@/lib/api-client";
+import UniversalAttachmentAdapter from "@/components/assistant-ui/provider/AllDocumentsAttachmentAdapter";
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
@@ -83,8 +82,7 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
           adapters: {
             feedback: feedbackAdapter,
             attachments: new CompositeAttachmentAdapter([
-              new SimpleImageAttachmentAdapter(),
-              new SimpleTextAttachmentAdapter(),
+              new UniversalAttachmentAdapter(),
             ]),
           },
         }
@@ -154,6 +152,30 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                 conversation_id: remoteId,
               });
 
+              // get info for each attachment
+              let attachments = [];
+              for (const message of res.data) {
+                for (const attachment of message.attachments || []) {
+                  const attachment_info = await apiClient.getDocument(attachment);
+                  const url = await apiClient.viewRawFile(attachment);
+                  let content = "";
+                  try {
+                    content = await fetch(url.url).then((res) => res.text());
+                  } catch (error) {
+                    content = "";
+                  }
+                  content = atob(content);
+                  attachments.push({
+                    id: attachment,
+                    type: "document",
+                    status: { type: "complete" },
+                    name: attachment_info.file_name,
+                    contentType: attachment_info.file_type,
+                    content: [{ type: "text", text: content }],
+                  });
+                }
+              }
+
               return {
                 messages: (res.data || [])
                   .slice()
@@ -163,7 +185,7 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                       id: m.id,
                       role: m.role,
                       content: [{ type: "text", text: m.content }],
-                      attachments: [],
+                      attachments: attachments,
                       threadId: remoteId,
                       status: "regular",
                       metadata: {},
@@ -176,17 +198,28 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
 
             async append(message: any) {
               const newMessage = message.message;
-              try {
-                await apiClient.createMessage({
-                  id: uuidv5(newMessage.id || NIL, NAMESPACE),
-                  conversation_id: refRemoteId.current || uuidv5(threadId, NAMESPACE),
-                  role: newMessage.role,
-                  content: newMessage.content[0]?.text || "",
-                });
-              } catch (error) {
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                this.append(message);
-              }
+              const maxRetries = 5;
+              const retryWithCount = async (retryCount: number) => {
+                try {
+                  await apiClient.createMessage({
+                    id: uuidv5(newMessage.id || NIL, NAMESPACE),
+                    conversation_id:
+                      refRemoteId.current || uuidv5(threadId, NAMESPACE),
+                    attachments: newMessage.attachments,
+                    role: newMessage.role,
+                    content: newMessage.content[0]?.text || "",
+                  });
+                } catch (error) {
+                  if (retryCount < maxRetries) {
+                    await new Promise((resolve) => setTimeout(resolve, 500));
+                    return retryWithCount(retryCount + 1);
+                  }
+                  throw new Error(
+                    `Failed to append message after ${maxRetries} retries`
+                  );
+                }
+              };
+              return retryWithCount(0);
             },
           }),
           [remoteId]

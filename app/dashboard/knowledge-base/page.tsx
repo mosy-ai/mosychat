@@ -34,22 +34,25 @@ import {
   apiClient,
   KnowledgeBase,
   UserResponse,
-} from "@/lib/api-client"; // Make sure this path is correct
+  GroupResponse, // <-- ADDED: Import GroupResponse
+} from "@/lib/api-client";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // For the disabled button
+import { useAuth } from "@/components/vietrux-ui/layout-context-provider";
 
 export default function KnowledgeBasePage() {
+  const { user } = useAuth();
   // State for the main page
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   // State to control which dialog is open and for which KB
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingKBDetails, setEditingKBDetails] = useState<KnowledgeBase | null>(null);
   const [editingKBUsers, setEditingKBUsers] = useState<KnowledgeBase | null>(null);
+  const [editingKBGroups, setEditingKBGroups] = useState<KnowledgeBase | null>(null); // <-- ADDED
 
+  
   // Callback to fetch/refresh the list of KBs
   const listKnowledgeBases = useCallback(async () => {
     setIsLoading(true);
@@ -113,6 +116,7 @@ export default function KnowledgeBasePage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Users</TableHead>
+              <TableHead>Groups</TableHead>
               <TableHead>Documents</TableHead>
               <TableHead className="text-right">Functions</TableHead>
             </TableRow>
@@ -129,28 +133,23 @@ export default function KnowledgeBasePage() {
                   </Link>
                 </TableCell>
                 <TableCell>{kb.users?.length ?? 0}</TableCell>
+                <TableCell>{kb.groups?.length ?? 0}</TableCell>
                 <TableCell>{kb.document_count ?? 0}</TableCell>
                 <TableCell className="text-right">
+                  {user?.role === "ADMIN" ? (
                   <div className="flex justify-end space-x-2">
                     <Button variant="ghost" size="sm" onClick={() => setEditingKBDetails(kb)}><IconPencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="sm" onClick={() => setEditingKBUsers(kb)}><IconUsers className="w-4 h-4" /></Button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          {/* Button is disabled as API does not support groups for KBs */}
-                          <span tabIndex={0}>
-                            <Button variant="ghost" size="sm" disabled>
-                              <IconUsersGroup className="w-4 h-4" />
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Editing groups is not supported for Knowledge Bases.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingKBGroups(kb)}>
+                      <IconUsersGroup className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDeleteKB(kb.id)}><IconTrash className="w-4 h-4 text-red-500" /></Button>
                   </div>
+                  ) : (
+                    <Link href={`/dashboard/knowledge-base/${kb.id}`}>
+                      <IconPencil className="w-4 h-4" />
+                    </Link>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -158,7 +157,6 @@ export default function KnowledgeBasePage() {
         </Table>
       </div>
 
-      {/* --- DIALOGS --- */}
       <AddKnowledgeBaseDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
@@ -193,11 +191,22 @@ export default function KnowledgeBasePage() {
           }}
         />
       )}
+
+      {editingKBGroups && (
+        <EditKnowledgeBaseGroupsDialog
+          key={editingKBGroups.id}
+          kb={editingKBGroups}
+          open={!!editingKBGroups}
+          onOpenChange={(isOpen) => !isOpen && setEditingKBGroups(null)}
+          onSuccess={() => {
+            setEditingKBGroups(null);
+            listKnowledgeBases();
+          }}
+        />
+      )}
     </>
   );
 }
-
-// --- Dialog Components ---
 
 interface DialogProps {
   open: boolean;
@@ -205,6 +214,7 @@ interface DialogProps {
   onSuccess: () => void;
 }
 
+// ... (AddKnowledgeBaseDialog and EditKnowledgeBaseNameDialog remain unchanged)
 function AddKnowledgeBaseDialog({ open, onOpenChange, onSuccess }: DialogProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -275,6 +285,8 @@ function EditKnowledgeBaseNameDialog({ kb, open, onOpenChange, onSuccess }: { kb
   );
 }
 
+
+// ... (EditKnowledgeBaseUsersDialog remains unchanged)
 function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess }: { kb: KnowledgeBase } & DialogProps) {
   const [allUsers, setAllUsers] = useState<UserResponse[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set(kb.user_ids || []));
@@ -282,7 +294,6 @@ function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess }: { k
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lazy-load all users when the dialog opens
   useEffect(() => {
     if (open) {
       const fetchUsers = async () => {
@@ -363,6 +374,103 @@ function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess }: { k
         </div>
         <Button onClick={handleSave} disabled={isLoading || isSubmitting} className="w-full mt-4">
           {isSubmitting ? "Saving..." : "Update Users"}
+        </Button>
+        {error && <Alert variant="destructive" className="mt-2"><IconExclamationCircle className="w-4 h-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// --- ADDED: New Dialog component for managing groups ---
+function EditKnowledgeBaseGroupsDialog({ kb, open, onOpenChange, onSuccess }: { kb: KnowledgeBase } & DialogProps) {
+  const [allGroups, setAllGroups] = useState<GroupResponse[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set(kb.group_ids || []));
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Lazy-load all groups when the dialog opens
+  useEffect(() => {
+    if (open) {
+      const fetchGroups = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const response = await apiClient.listGroups({ limit: 1000 }); // Use listGroups
+          setAllGroups(response.data || []);
+        } catch (err: any) {
+          setError(err.message || "Failed to load groups.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchGroups();
+    }
+  }, [open]);
+
+  const handleCheckboxChange = (groupId: string, checked: boolean) => {
+    const newSelectedIds = new Set(selectedGroupIds);
+    if (checked) newSelectedIds.add(groupId);
+    else newSelectedIds.delete(groupId);
+    setSelectedGroupIds(newSelectedIds);
+  };
+
+  const handleSave = async () => {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      // Call updateKnowledgeBase with the new group_ids
+      await apiClient.updateKnowledgeBase(kb.id, { group_ids: Array.from(selectedGroupIds) });
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || "Failed to update groups.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Manage Groups for '{kb.name}'</DialogTitle>
+          <DialogDescription>Select groups that can access this knowledge base.</DialogDescription>
+        </DialogHeader>
+        <div className="h-[320px] overflow-y-auto border rounded-md relative mt-4">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+              <IconLoader className="w-6 h-6 animate-spin" />
+              <span className="ml-2">Loading groups...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allGroups.map((group) => (
+                  <TableRow key={group.id}>
+                    <TableCell>
+                      <Checkbox
+                        id={`group-${group.id}`}
+                        checked={selectedGroupIds.has(group.id)}
+                        onCheckedChange={(checked) => handleCheckboxChange(group.id, !!checked)}
+                      />
+                    </TableCell>
+                    <TableCell>{group.name}</TableCell>
+                    <TableCell>{group.description}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+        <Button onClick={handleSave} disabled={isLoading || isSubmitting} className="w-full mt-4">
+          {isSubmitting ? "Saving..." : "Update Groups"}
         </Button>
         {error && <Alert variant="destructive" className="mt-2"><IconExclamationCircle className="w-4 h-4" /><AlertDescription>{error}</AlertDescription></Alert>}
       </DialogContent>

@@ -28,7 +28,9 @@ interface KnowledgeBase {
   id: string;
   name: string;
   user_ids?: string[] | null;
+  group_ids?: string[] | null;
   users?: UserResponse[] | null;
+  groups?: GroupResponse[] | null;
   documents?: Document[] | null;
   document_count?: number | null;
   created_at: string;
@@ -38,11 +40,13 @@ interface KnowledgeBase {
 interface CreateKnowledgeBaseRequest {
   name: string;
   user_ids?: string[] | null;
+  group_ids?: string[] | null;
 }
 
 interface UpdateKnowledgeBaseRequest {
   name?: string | null;
   user_ids?: string[] | null;
+  group_ids?: string[] | null;
 }
 
 interface KnowledgeBaseListParams {
@@ -62,6 +66,11 @@ enum DocumentStatus {
   READING = "READING",
 }
 
+enum DocumentPurpose {
+  ATTACHMENT = "ATTACHMENT",
+  KNOWLEDGE_BASE = "KNOWLEDGE_BASE",
+}
+
 interface Document {
   id: string;
   status: DocumentStatus;
@@ -70,10 +79,12 @@ interface Document {
   file_type: string;
   file_size: number;
   file_metadata?: object | null;
+  file_upload_type: string; // "FILE" or "URL"
   description?: string | null;
+  purpose: DocumentPurpose;
   summary?: string | null;
   created_by: string;
-  document_tags?: string[] | null;
+  document_tags: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -88,7 +99,8 @@ interface DocumentListParams {
 
 interface CreateDocumentRequest {
   document_dto: string;
-  file: File;
+  file?: File | null;
+  file_upload_type: string; // "FILE" or "URL"
 }
 
 interface UpdateDocumentRequest {
@@ -267,12 +279,14 @@ interface MessageCreateDto {
   conversation_id: string;
   role: string;
   content: string;
+  attachments?: any[];
 }
 
 interface MessageResponse {
   id: string;
   conversation_id: string;
   role: string;
+  attachments?: any[];
   content: string;
   feedback?: FeedbackResponse[] | null;
   feedback_count?: number | null;
@@ -435,17 +449,21 @@ class ApiClient {
   async createDocument(data: CreateDocumentRequest): Promise<BaseResponse<Document>> {
     const formData = new FormData();
     formData.append("document_dto", data.document_dto);
-    formData.append("file", data.file);
+    if (data.file) {
+      formData.append("file", data.file);
+    }
     const url = `${this.baseURL}/api/v1/documents`;
     const headers: Record<string, string> = {};
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
     }
+    console.log(formData);
     const response = await fetch(url, {
       method: "POST",
       headers,
       body: formData,
     });
+    
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
@@ -753,4 +771,4 @@ export type {
   GenerateTitleRequest,
   GenerateTitleResponse,
 };
-export { DocumentStatus, ApiClient };
+export { DocumentStatus, ApiClient, DocumentPurpose };

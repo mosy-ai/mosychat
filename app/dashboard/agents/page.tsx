@@ -64,7 +64,8 @@ export default function AgentsPage() {
     setError(null);
     try {
       const response = await apiClient.listAgents();
-      setAgents(response.data || []);
+      setAgents(response.data.map(agent => ({ ...agent, user_count: agent.users?.length || 0, group_count: agent.groups?.length || 0, knowledge_base_count: agent.knowledge_base_count || 0 })) || []); 
+
     } catch (err: any) {
       setError(err.message || "Failed to fetch agents.");
     } finally {
