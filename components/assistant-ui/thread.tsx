@@ -1,3 +1,4 @@
+import { v5 as uuidv5, NIL } from "uuid";
 import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
@@ -11,7 +12,7 @@ import {
 import {
   ComposerAttachments,
   ComposerAddAttachment,
-  UserMessageAttachments 
+  UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import type { FC } from "react";
 import { useState, useCallback } from "react";
@@ -21,7 +22,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
-  PencilIcon,
   RefreshCwIcon,
   SendHorizontalIcon,
   ThumbsUpIcon,
@@ -29,10 +29,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
-import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
-import { FeedbackPopup } from "../vietrux-ui/feedback-popup";
+import { FeedbackPopup } from "@/components/mosy-ui/feedback-popup";
+
+const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
 export const Thread: FC = () => {
   return (
@@ -48,7 +49,6 @@ export const Thread: FC = () => {
         <ThreadPrimitive.Messages
           components={{
             UserMessage: UserMessage,
-            EditComposer: EditComposer,
             AssistantMessage: AssistantMessage,
           }}
         />
@@ -91,8 +91,6 @@ const ThreadWelcome: FC = () => {
     </ThreadPrimitive.Empty>
   );
 };
-
-
 
 const Composer: FC = () => {
   return (
@@ -143,45 +141,11 @@ const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="grid auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 [&:where(>*)]:col-start-2 w-full max-w-[var(--thread-max-width)] py-4">
       <UserMessageAttachments />
-      <UserActionBar />
       <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-3xl px-5 py-2.5 col-start-2 row-start-2">
         <MessagePrimitive.Content />
       </div>
       <BranchPicker className="col-span-full col-start-1 row-start-3 -mr-1 justify-end" />
     </MessagePrimitive.Root>
-  );
-};
-
-const UserActionBar: FC = () => {
-  return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      className="flex flex-col items-end col-start-1 row-start-2 mr-3 mt-2.5"
-    >
-      <ActionBarPrimitive.Edit asChild>
-        <TooltipIconButton tooltip="Edit">
-          <PencilIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Edit>
-    </ActionBarPrimitive.Root>
-  );
-};
-
-const EditComposer: FC = () => {
-  return (
-    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-xl">
-      <ComposerPrimitive.Input className="text-foreground flex h-8 w-full resize-none bg-transparent p-4 pb-0 outline-none" />
-
-      <div className="mx-3 mb-3 flex items-center justify-center gap-2 self-end">
-        <ComposerPrimitive.Cancel asChild>
-          <Button variant="ghost">Cancel</Button>
-        </ComposerPrimitive.Cancel>
-        <ComposerPrimitive.Send asChild>
-          <Button>Send</Button>
-        </ComposerPrimitive.Send>
-      </div>
-    </ComposerPrimitive.Root>
   );
 };
 
@@ -225,8 +189,12 @@ const AssistantActionBar: FC = () => {
   const handleFeedbackSubmit = useCallback(
     async (comment: string) => {
       try {
+        let message_id = originalMessage.id;
+        if (originalMessage.id.length < 36) {
+          message_id = uuidv5(originalMessage.id, NAMESPACE);
+        }
         apiClient.createFeedback({
-          message_id: originalMessage.id,
+          message_id,
           rating: feedbackType === "positive" ? 1 : 0,
           comment,
         });
@@ -261,11 +229,11 @@ const AssistantActionBar: FC = () => {
             </MessagePrimitive.If>
           </TooltipIconButton>
         </ActionBarPrimitive.Copy>
-        <ActionBarPrimitive.Reload asChild>
+        {/* <ActionBarPrimitive.Reload asChild>
           <TooltipIconButton tooltip="Refresh">
             <RefreshCwIcon />
           </TooltipIconButton>
-        </ActionBarPrimitive.Reload>
+        </ActionBarPrimitive.Reload> */}
 
         {/* Custom feedback buttons that open popup */}
         <TooltipIconButton

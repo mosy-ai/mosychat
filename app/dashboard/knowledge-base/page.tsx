@@ -38,7 +38,7 @@ import {
 } from "@/lib/api-client";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { useAuth } from "@/components/vietrux-ui/layout-context-provider";
+import { useAuth } from "@/components/mosy-ui/layout-context-provider";
 
 export default function KnowledgeBasePage() {
   const { user } = useAuth();

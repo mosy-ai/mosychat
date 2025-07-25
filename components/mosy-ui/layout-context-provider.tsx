@@ -6,8 +6,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { UserResponse } from "@/lib/api-client";
 import { verifyAndGetMe } from "@/lib/custom-func";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/vietrux-ui/app-sidebar";
-import { SiteHeader } from "@/components/vietrux-ui/site-header";
+import { AppSidebar } from "@/components/mosy-ui/app-sidebar";
+import { SiteHeader } from "@/components/mosy-ui/site-header";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { IconLoader2 } from "@tabler/icons-react";
 

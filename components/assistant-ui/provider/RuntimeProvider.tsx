@@ -152,28 +152,21 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                 conversation_id: remoteId,
               });
 
-              // get info for each attachment
-              let attachments = [];
               for (const message of res.data) {
+                let attachments = [];
                 for (const attachment of message.attachments || []) {
-                  const attachment_info = await apiClient.getDocument(attachment);
-                  const url = await apiClient.viewRawFile(attachment);
-                  let content = "";
-                  try {
-                    content = await fetch(url.url).then((res) => res.text());
-                  } catch (error) {
-                    content = "";
-                  }
-                  content = atob(content);
+                  const attachment_info = await apiClient.getDocument(
+                    attachment
+                  );
                   attachments.push({
                     id: attachment,
                     type: "document",
                     status: { type: "complete" },
                     name: attachment_info.file_name,
                     contentType: attachment_info.file_type,
-                    content: [{ type: "text", text: content }],
                   });
                 }
+                message.attachments = attachments;
               }
 
               return {
@@ -185,7 +178,7 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                       id: m.id,
                       role: m.role,
                       content: [{ type: "text", text: m.content }],
-                      attachments: attachments,
+                      attachments: m.attachments,
                       threadId: remoteId,
                       status: "regular",
                       metadata: {},
@@ -210,6 +203,9 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                     content: newMessage.content[0]?.text || "",
                   });
                 } catch (error) {
+                  await apiClient.updateMessage(newMessage.id, {
+                    content: newMessage.content[0]?.text || "",
+                  });
                   if (retryCount < maxRetries) {
                     await new Promise((resolve) => setTimeout(resolve, 500));
                     return retryWithCount(retryCount + 1);

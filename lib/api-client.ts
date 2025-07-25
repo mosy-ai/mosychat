@@ -672,7 +672,16 @@ class ApiClient {
     });
   }
   
+
   // Feedback endpoints
+  async listFeedbacks(params: { page?: number; limit?: number } = {}): Promise<BaseResponse<FeedbackResponse[]>> {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.append("page", params.page.toString());
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return this.request<BaseResponse<FeedbackResponse[]>>(`/api/v1/feedback${query}`);
+  }
+
   async createFeedback(data: FeedbackCreateDto): Promise<FeedbackResponse> {
     return this.request<FeedbackResponse>("/api/v1/feedback", {
       method: "POST",

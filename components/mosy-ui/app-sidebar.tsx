@@ -6,10 +6,11 @@ import {
   IconUsersGroup,
   IconUsers,
   IconRobot,
+  IconHeart
 } from "@tabler/icons-react";
-import { NavAdminPanel } from "@/components/vietrux-ui/nav-admin";
-import { NavMain } from "@/components/vietrux-ui/nav-main";
-import { NavUser } from "@/components/vietrux-ui/nav-user";
+import { NavAdminPanel } from "@/components/mosy-ui/nav-admin";
+import { NavMain } from "@/components/mosy-ui/nav-main";
+import { NavUser } from "@/components/mosy-ui/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -46,10 +47,15 @@ const data = {
       icon: IconUsers,
     },
     {
-        name: "Groups",
-        url: "/dashboard/groups",
-        icon: IconUsersGroup,
-    }
+      name: "Groups",
+      url: "/dashboard/groups",
+      icon: IconUsersGroup,
+    },
+    {
+      name: "Feedback",
+      url: "/dashboard/feedbacks",
+      icon: IconHeart,
+    },
   ],
 };
 export function AppSidebar({
@@ -83,7 +89,7 @@ export function AppSidebar({
         <NavAdminPanel items={data.adminPanel} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user as {name: string, email:string}} />
+        <NavUser user={user as { name: string; email: string }} />
       </SidebarFooter>
     </Sidebar>
   );

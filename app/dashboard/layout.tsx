@@ -1,5 +1,5 @@
 "use client";
-import LayoutContextProvider from "@/components/vietrux-ui/layout-context-provider";
+import LayoutContextProvider from "@/components/mosy-ui/layout-context-provider";
 
 export default function RootLayout({
   children,
