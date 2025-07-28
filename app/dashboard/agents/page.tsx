@@ -63,7 +63,7 @@ export default function AgentsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.listAgents();
+      const response = await apiClient.agents.list();
       setAgents(response.data.map(agent => ({ ...agent, user_count: agent.users?.length || 0, group_count: agent.groups?.length || 0, knowledge_base_count: agent.knowledge_base_count || 0 })) || []); 
 
     } catch (err: any) {
@@ -82,7 +82,7 @@ export default function AgentsPage() {
   const handleDeleteAgent = async (agentId: string) => {
     if (window.confirm("Are you sure you want to delete this agent?")) {
       try {
-        await apiClient.deleteAgent(agentId);
+        await apiClient.agents.delete(agentId);
         await listAgents();
       } catch (err: any) {
         alert(err.message || "Failed to delete agent.");
@@ -100,7 +100,7 @@ export default function AgentsPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 px-4 md:gap-6 md:py-6">
+      <div className="flex flex-col  p-4 md:gap-6 md:p-10">
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
           Agents
         </h1>
@@ -231,7 +231,7 @@ function AddAgentDialog({ open, onOpenChange, onSuccess }: DialogProps) {
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.createAgent({ name, description });
+      await apiClient.agents.create({ name, description });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -268,7 +268,7 @@ function EditAgentDetailsDialog({ agent, open, onOpenChange, onSuccess }: { agen
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.updateAgent(agent.id, { name, description });
+      await apiClient.agents.update(agent.id, { name, description });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -406,8 +406,8 @@ function EditAgentUsersDialog(props: { agent: AgentResponse } & DialogProps) {
       title={`Manage Users for Agent: ${props.agent.name}`}
       description="Select the users that can be associated with this agent."
       itemTypeName="user"
-      fetchItems={() => apiClient.listUsers({ size: 1000 })}
-      onSave={(agentId, user_ids) => apiClient.updateAgent(agentId, { user_ids })}
+      fetchItems={() => apiClient.users.list({ size: 1000 })}
+      onSave={(agentId, user_ids) => apiClient.agents.update(agentId, { user_ids })}
     />
   );
 }
@@ -419,8 +419,8 @@ function EditAgentGroupsDialog(props: { agent: AgentResponse } & DialogProps) {
       title={`Manage Groups for Agent: ${props.agent.name}`}
       description="Select the groups that can be associated with this agent."
       itemTypeName="group"
-      fetchItems={() => apiClient.listGroups({ limit: 1000 })}
-      onSave={(agentId, group_ids) => apiClient.updateAgent(agentId, { group_ids })}
+      fetchItems={() => apiClient.groups.list({ limit: 1000 })}
+      onSave={(agentId, group_ids) => apiClient.agents.update(agentId, { group_ids })}
     />
   );
 }
@@ -432,8 +432,8 @@ function EditAgentKBsDialog(props: { agent: AgentResponse } & DialogProps) {
       title={`Manage Knowledge Bases for Agent: ${props.agent.name}`}
       description="Select the knowledge bases this agent can access."
       itemTypeName="knowledge_base"
-      fetchItems={() => apiClient.listKnowledgeBases({ limit: 1000 })}
-      onSave={(agentId, knowledge_base_ids) => apiClient.updateAgent(agentId, { knowledge_base_ids })}
+      fetchItems={() => apiClient.knowledgeBases.list({ limit: 1000 })}
+      onSave={(agentId, knowledge_base_ids) => apiClient.agents.update(agentId, { knowledge_base_ids })}
     />
   );
 }

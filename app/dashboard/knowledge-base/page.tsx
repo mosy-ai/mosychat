@@ -34,7 +34,7 @@ import {
   apiClient,
   KnowledgeBase,
   UserResponse,
-  GroupResponse, // <-- ADDED: Import GroupResponse
+  GroupResponse,
 } from "@/lib/api-client";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
@@ -58,7 +58,7 @@ export default function KnowledgeBasePage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.listKnowledgeBases();
+      const response = await apiClient.knowledgeBases.list();
       setKnowledgeBases(response.data || []);
     } catch (err: any) {
       setError(err.message || "Failed to fetch knowledge bases.");
@@ -76,7 +76,7 @@ export default function KnowledgeBasePage() {
   const handleDeleteKB = async (kbId: string) => {
     if (window.confirm("Are you sure you want to delete this knowledge base? This action cannot be undone.")) {
       try {
-        await apiClient.deleteKnowledgeBase(kbId);
+        await apiClient.knowledgeBases.delete(kbId);
         await listKnowledgeBases(); // Refresh the list
       } catch (err: any) {
         alert(err.message || "Failed to delete knowledge base.");
@@ -99,7 +99,7 @@ export default function KnowledgeBasePage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 px-4 md:gap-6 md:py-6">
+      <div className="flex flex-col  p-4 md:gap-6 md:p-10">
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
           Knowledge Base
         </h1>
@@ -224,7 +224,7 @@ function AddKnowledgeBaseDialog({ open, onOpenChange, onSuccess }: DialogProps) 
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.createKnowledgeBase({ name });
+      await apiClient.knowledgeBases.create({ name });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -259,7 +259,7 @@ function EditKnowledgeBaseNameDialog({ kb, open, onOpenChange, onSuccess }: { kb
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.updateKnowledgeBase(kb.id, { name });
+      await apiClient.knowledgeBases.update(kb.id, { name });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "Failed to update name.");
@@ -300,7 +300,7 @@ function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess }: { k
         setIsLoading(true);
         setError(null);
         try {
-          const response = await apiClient.listUsers({ size: 1000 });
+          const response = await apiClient.users.list({ size: 1000 });
           setAllUsers(response.data || []);
         } catch (err: any) {
           setError(err.message || "Failed to load users.");
@@ -323,7 +323,7 @@ function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess }: { k
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.updateKnowledgeBase(kb.id, { user_ids: Array.from(selectedUserIds) });
+      await apiClient.knowledgeBases.update(kb.id, { user_ids: Array.from(selectedUserIds) });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "Failed to update users.");
@@ -396,7 +396,7 @@ function EditKnowledgeBaseGroupsDialog({ kb, open, onOpenChange, onSuccess }: { 
         setIsLoading(true);
         setError(null);
         try {
-          const response = await apiClient.listGroups({ limit: 1000 }); // Use listGroups
+          const response = await apiClient.groups.list({ limit: 1000 }); // Use listGroups
           setAllGroups(response.data || []);
         } catch (err: any) {
           setError(err.message || "Failed to load groups.");
@@ -420,7 +420,7 @@ function EditKnowledgeBaseGroupsDialog({ kb, open, onOpenChange, onSuccess }: { 
     setIsSubmitting(true);
     try {
       // Call updateKnowledgeBase with the new group_ids
-      await apiClient.updateKnowledgeBase(kb.id, { group_ids: Array.from(selectedGroupIds) });
+      await apiClient.knowledgeBases.update(kb.id, { group_ids: Array.from(selectedGroupIds) });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "Failed to update groups.");

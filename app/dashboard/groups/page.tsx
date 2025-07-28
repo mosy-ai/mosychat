@@ -53,7 +53,7 @@ export default function GroupsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.listGroups();
+      const response = await apiClient.groups.list();
       setGroups(response.data || []);
     } catch (err: any) {
       setError(err.message || "Failed to fetch groups.");
@@ -72,7 +72,7 @@ export default function GroupsPage() {
   const handleDeleteGroup = async (groupId: string) => {
     if (window.confirm("Are you sure you want to delete this group?")) {
       try {
-        await apiClient.deleteGroup(groupId);
+        await apiClient.groups.delete(groupId);
         // Refresh the list after successful deletion
         await listGroups();
       } catch (err: any) {
@@ -93,7 +93,7 @@ export default function GroupsPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 px-4 md:gap-6 md:py-6">
+      <div className="flex flex-col  p-4 md:gap-6 md:p-10">
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
           Groups
         </h1>
@@ -202,7 +202,7 @@ function AddGroupDialog({ open, onOpenChange, onSuccess }: DialogProps) {
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.createGroup({ name, description });
+      await apiClient.groups.create({ name, description });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -241,7 +241,7 @@ function EditGroupNameDialog({ group, open, onOpenChange, onSuccess }: { group: 
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.updateGroup(group.id, { name, description });
+      await apiClient.groups.update(group.id, { name, description });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
@@ -288,8 +288,7 @@ function EditGroupUsersDialog({ group, open, onOpenChange, onSuccess }: { group:
         setIsLoading(true);
         setError(null);
         try {
-          // Fetch a large number of users; consider adding pagination if you have thousands.
-          const response = await apiClient.listUsers({ size: 1000 });
+          const response = await apiClient.users.list({ size: 1000 });
           setAllUsers(response.data || []);
         } catch (err: any) {
           setError(err.message || "Failed to fetch users.");
@@ -312,7 +311,7 @@ function EditGroupUsersDialog({ group, open, onOpenChange, onSuccess }: { group:
     setError(null);
     setIsSubmitting(true);
     try {
-      await apiClient.updateGroup(group.id, { user_ids: Array.from(selectedUserIds) });
+      await apiClient.groups.update(group.id, { user_ids: Array.from(selectedUserIds) });
       onSuccess();
     } catch (err: any) {
       setError(err.message || "Failed to update group users.");

@@ -45,9 +45,9 @@ import {
 
 // --- API Client Imports (including the new enum) ---
 import {
+  apiClient,
   Document,
   KnowledgeBase,
-  apiClient,
   DocumentPurpose,
 } from "@/lib/api-client";
 
@@ -83,7 +83,7 @@ export default function KnowledgeBaseDetailPage() {
     setIsPageLoading(true);
     setPageError(null);
     try {
-      const kbResponse = await apiClient.getKnowledgeBase(kbId);
+      const kbResponse = await apiClient.knowledgeBases.get(kbId);
 
       if (
         kbResponse.status_code !== 200
@@ -125,7 +125,7 @@ export default function KnowledgeBaseDetailPage() {
           knowledge_base_id: kbId,
           purpose: uploadPurpose,
         });
-        return apiClient.createDocument({
+        return apiClient.documents.create({
           document_dto: documentDto,
           file: file,
           file_upload_type: "FILE",
@@ -153,7 +153,7 @@ export default function KnowledgeBaseDetailPage() {
         purpose: uploadPurpose,
       });
 
-      await apiClient.createDocument({
+      await apiClient.documents.create({
         document_dto: documentDto,
         file_upload_type: "URL",
       });
@@ -178,7 +178,7 @@ export default function KnowledgeBaseDetailPage() {
     )
       return;
     try {
-      await apiClient.deleteDocument(docId);
+      await apiClient.documents.delete(docId);
       setDocuments((prev) => prev.filter((doc) => doc.id !== docId));
     } catch (error) {
       console.error("Failed to delete document:", error);
@@ -202,8 +202,8 @@ export default function KnowledgeBaseDetailPage() {
         .split(/,|\s+/)
         .map((tag) => tag.trim())
         .filter(Boolean);
-      await apiClient.updateDocument(docId, {
-        document_tags: tagsArray.length > 0 ? tagsArray : null,
+      await apiClient.documents.update(docId, {
+        tags: tagsArray.length > 0 ? tagsArray : null,
       });
       setDocuments((prev) =>
         prev.map((file) =>
@@ -331,7 +331,7 @@ export default function KnowledgeBaseDetailPage() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-4 px-4 md:gap-6 md:py-6">
+      <div className="flex flex-col  p-4 md:gap-6 md:p-10">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.back()}>
             <IconArrowLeft className="h-4 w-4" />
@@ -418,7 +418,7 @@ export default function KnowledgeBaseDetailPage() {
                           <div className="flex flex-wrap gap-1 max-w-xs">
                             {file.document_tags?.length ? (
                               file.document_tags.map((tag) => (
-                                <Badge key={tag} variant="secondary">
+                                <Badge key={tag} variant="secondary" className="bg-blue-500 text-white dark:bg-blue-600">
                                   {tag}
                                 </Badge>
                               ))

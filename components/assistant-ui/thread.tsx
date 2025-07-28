@@ -1,5 +1,13 @@
 import { v5 as uuidv5, NIL } from "uuid";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Make sure you have the Select component from shadcn/ui
+import { useAgent } from "@/context/AgentContext";
+import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
   ComposerPrimitive,
@@ -22,11 +30,13 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
-  RefreshCwIcon,
   SendHorizontalIcon,
   ThumbsUpIcon,
   ThumbsDownIcon,
 } from "lucide-react";
+import { 
+  IconUser,
+ } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
@@ -84,8 +94,10 @@ const ThreadWelcome: FC = () => {
   return (
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
+        <div className="flex w-full flex-grow flex-col items-center justify-center gap-4">
+          <p className="text-lg font-medium">How can I help you today?</p>
+          <p className="text-sm text-muted-foreground">Select your agent here:</p>
+          <AgentSelector />
         </div>
       </div>
     </ThreadPrimitive.Empty>
@@ -150,15 +162,22 @@ const UserMessage: FC = () => {
 };
 
 const AssistantMessage: FC = () => {
+  const { selectedAgent } = useAgent();
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
       <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="size-8 rounded-full bg-muted flex items-center justify-center">
+            <IconUser />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {selectedAgent?.name} {selectedAgent?.description}
+          </p>
+        </div>
         <MessagePrimitive.Content components={{ Text: MarkdownText }} />
         <MessageError />
       </div>
-
       <AssistantActionBar />
-
       <BranchPicker className="col-start-2 row-start-2 -ml-2 mr-2" />
     </MessagePrimitive.Root>
   );
@@ -193,7 +212,7 @@ const AssistantActionBar: FC = () => {
         if (originalMessage.id.length < 36) {
           message_id = uuidv5(originalMessage.id, NAMESPACE);
         }
-        apiClient.createFeedback({
+        apiClient.conversations.createFeedback({
           message_id,
           rating: feedbackType === "positive" ? 1 : 0,
           comment,
@@ -229,11 +248,6 @@ const AssistantActionBar: FC = () => {
             </MessagePrimitive.If>
           </TooltipIconButton>
         </ActionBarPrimitive.Copy>
-        {/* <ActionBarPrimitive.Reload asChild>
-          <TooltipIconButton tooltip="Refresh">
-            <RefreshCwIcon />
-          </TooltipIconButton>
-        </ActionBarPrimitive.Reload> */}
 
         {/* Custom feedback buttons that open popup */}
         <TooltipIconButton
@@ -301,5 +315,38 @@ const CircleStopIcon = () => {
     >
       <rect width="10" height="10" x="3" y="3" rx="2" />
     </svg>
+  );
+};
+
+const AgentSelector: FC = () => {
+  const { agents, selectedAgent, setSelectedAgent, isLoading } = useAgent();
+
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading agents...</p>;
+  }
+  
+  if (!agents.length) {
+    return <p className="text-sm text-muted-foreground">No agents available.</p>
+  }
+
+  return (
+    
+    <div className="w-full max-w-xs">
+      <Select
+        value={selectedAgent?.id ?? ""}
+        onValueChange={(value) => setSelectedAgent(agents.find((agent) => agent.id === value) || null)}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select an agent..." />
+        </SelectTrigger>
+        <SelectContent>
+          {agents.map((agent) => (
+            <SelectItem key={agent.id} value={agent.id}>
+              {agent.name} {agent.description}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 };

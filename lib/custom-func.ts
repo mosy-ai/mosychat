@@ -1,5 +1,5 @@
 // import function from api-client.ts
-import { apiClient } from "./api-client";
+import { apiClient } from "@/lib/api-client";
 
 export async function verifyAndGetMe() {
   const accessToken = document.cookie
@@ -12,12 +12,12 @@ export async function verifyAndGetMe() {
   apiClient.setToken(token);
 
   // get me to get sub
-  const user_sub = (await apiClient.getCurrentUser()).sub;
+  const user_sub = (await apiClient.auth.getCurrentUser()).sub;
   if (!user_sub) {
     throw new Error("No user sub found");
   }
   // get user by sub
-  const user = await apiClient.getUser(user_sub);
+  const user = await apiClient.users.get(user_sub);
   if (!user) {
     throw new Error("No user found with the given sub");
   }

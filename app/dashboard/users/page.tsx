@@ -48,7 +48,7 @@ export default function KnowledgeBasePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.listUsers();
+      const res = await apiClient.users.list();
       setUsers(res.data || []);
     } catch (e: any) {
       setError(e.message || "Failed to load users");
@@ -64,7 +64,7 @@ export default function KnowledgeBasePage() {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.deleteUser(userId);
+      await apiClient.users.delete(userId);
       setUsers(users.filter((user) => user.id !== userId));
     } catch (e: any) {
       setError(e.message || "Failed to delete user");
@@ -74,7 +74,7 @@ export default function KnowledgeBasePage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 px-4 md:gap-6 md:py-6">
+    <div className="flex flex-col  p-4 md:gap-6 md:p-10">
       <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
         Users
       </h1>
@@ -176,7 +176,7 @@ function EditUserDialog({
         email,
       };
       if (password) updateData.password = password;
-      await apiClient.updateUser(userId, updateData);
+      await apiClient.users.update(userId, updateData);
       setSuccess(true);
       listUsers();
     } catch (e: any) {
@@ -286,7 +286,7 @@ function AddUserDialog({ listUsers }: { listUsers: () => void }) {
         is_active: true,
         role,
       };
-      await apiClient.createUser(req);
+      await apiClient.users.create(req);
       setSuccess(true);
       listUsers();
     } catch (e: any) {
