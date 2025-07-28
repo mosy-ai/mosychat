@@ -21,7 +21,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await apiClient.login({ email, password });
+      const response = await apiClient.auth.login({ email, password });
       if (response.access_token) {
         document.cookie = `access_token=${response.access_token}; path=/; samesite=lax`;
         router.push("/dashboard");
