@@ -10,7 +10,7 @@ import {
   useReactTable,
   PaginationState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { IconLoader } from "@tabler/icons-react";
 
 // API client and types
@@ -53,6 +53,7 @@ import { toast } from "sonner";
 
 // --- 2. TYPE DEFINITIONS ---
 // A custom "enriched" type that includes all the data we want to display in the table.
+// This structure remains the same, but how we create it becomes much more efficient.
 type EnrichedFeedback = {
   id: string;
   messageId: string;
@@ -126,7 +127,7 @@ const getColumns = (): ColumnDef<EnrichedFeedback>[] => [
     cell: ({ row }) => (
       <div
         className="whitespace-pre-wrap max-w-sm"
-        title={row.getValue("comment")}
+        title={row.getValue("comment") ?? undefined}
       >
         {row.getValue("comment") || (
           <span className="text-muted-foreground">No comment</span>
@@ -200,12 +201,12 @@ export default function FeedbackPage() {
     setIsLoading(true);
     try {
       // 1. Fetch filter options if they haven't been loaded yet.
-      // We fetch all of them at once to build our display maps.
+      // This is still needed for the filter dropdowns.
       if (filterOptions.users.length === 0) {
         const [userRes, agentRes, convRes] = await Promise.all([
           apiClient.users.list({ size: 999 }),
           apiClient.agents.list({ limit: 99 }),
-          apiClient.conversations.list({ limit: 999 }),
+          apiClient.conversations.list({ limit: 15 }),
         ]);
         setFilterOptions({
           users: userRes.data,
@@ -226,58 +227,54 @@ export default function FeedbackPage() {
       if (filters.agent_id !== "all") params.agent_id = filters.agent_id;
       if (filters.conversation_id !== "all")
         params.conversation_id = filters.conversation_id;
-      // The API doesn't filter by rating, so we'll do it client-side for now.
-      // If the API supported it, we'd add:
-      // if (filters.rating !== "all") params.rating = parseInt(filters.rating, 10);
+      if (filters.rating !== "all") params.rating = parseInt(filters.rating);
 
-      // 3. Fetch the feedback data from the API.
+      // 3. Fetch the feedback data from the API. This is now the ONLY call needed per page.
       const feedbackRes = await apiClient.conversations.listFeedbacks(params);
       const feedbacks = feedbackRes.data;
 
       // 4. Enrich the data: Map IDs to human-readable names.
-      const userMap = new Map(
-        filterOptions.users.map((u) => [u.id, u.name || u.email])
-      );
-      const agentMap = new Map(filterOptions.agents.map((a) => [a.id, a.name]));
+      // We only need the conversation map now for the title lookup.
       const convMap = new Map(
+        // Use the already-fetched conversations from state to build the map
         filterOptions.conversations.map((c) => [c.id, c.title])
       );
 
-      // This part is complex because we need to fetch each message to get its content and conversation ID.
-      // This is an N+1 problem. A better API would return this data with the feedback.
-      const enrichedDataPromises = feedbacks
-        // Client-side filtering for rating
-        .filter(
-          (f) =>
-            filters.rating === "all" || f.rating?.toString() === filters.rating
-        )
-        .map(async (feedback: FeedbackResponse) => {
-          try {
-            const message = await apiClient.conversations.getMessage(
-              feedback.message_id
+      // =================================================================
+      //  MAJOR IMPROVEMENT: Removed the N+1 API call pattern.
+      //  Data is now enriched synchronously using the nested data
+      //  from the single `listFeedbacks` API call.
+      // =================================================================
+      const enrichedData = feedbacks
+        .map((feedback: FeedbackResponse): EnrichedFeedback | null => {
+          // Gracefully handle cases where nested data might be missing from the API response
+          if (!feedback.message || !feedback.created_by) {
+            console.warn(
+              "Skipping feedback item due to missing nested data:",
+              feedback.id
             );
-            return {
-              id: feedback.id,
-              messageId: feedback.message_id,
-              comment: feedback.comment,
-              rating: feedback.rating,
-              messageContent: message.content,
-              userName: userMap.get(feedback.created_by_id!) || "Unknown User",
-              agentName: agentMap.get(feedback.agent_id!) || "Unknown Agent",
-              conversationTitle:
-                convMap.get(message.conversation_id) || "Unknown Conversation",
-            };
-          } catch {
-            // If a message or related item can't be fetched, return null to filter it out.
             return null;
           }
-        });
 
-      const resolvedData = (await Promise.all(enrichedDataPromises)).filter(
-        Boolean
-      ) as EnrichedFeedback[];
+          return {
+            id: feedback.id,
+            messageId: feedback.message_id,
+            comment: feedback.comment || null,
+            rating: feedback.rating || null,
+            messageContent: feedback.message.content,
+            userName:
+              feedback.created_by.name ||
+              feedback.created_by.email ||
+              "Unknown User",
+            agentName: feedback.agent_name || "Unknown Agent",
+            conversationTitle:
+              convMap.get(feedback.message.conversation_id) ||
+              "Unknown Conversation",
+          };
+        })
+        .filter(Boolean) as EnrichedFeedback[]; // Filter out any null items
 
-      setData(resolvedData);
+      setData(enrichedData);
       setPageCount(
         Math.ceil((feedbackRes.pages?.total || 0) / pagination.pageSize)
       );
@@ -357,12 +354,12 @@ export default function FeedbackPage() {
       </p>
       <Separator className="my-6" />
 
-      <div className="flex justify-end mb-4 gap-4 items-center">
+      <div className="flex flex-wrap justify-end mb-4 gap-2">
         <Select
           value={filters.user_id}
           onValueChange={(value) => handleFilterChange("user_id", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by User..." />
           </SelectTrigger>
           <SelectContent>
@@ -378,7 +375,7 @@ export default function FeedbackPage() {
           value={filters.agent_id}
           onValueChange={(value) => handleFilterChange("agent_id", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by Agent..." />
           </SelectTrigger>
           <SelectContent>
@@ -396,7 +393,7 @@ export default function FeedbackPage() {
             handleFilterChange("conversation_id", value)
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by Conversation..." />
           </SelectTrigger>
           <SelectContent>
@@ -412,7 +409,7 @@ export default function FeedbackPage() {
           value={filters.rating}
           onValueChange={(value) => handleFilterChange("rating", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by Rating..." />
           </SelectTrigger>
           <SelectContent>
@@ -421,7 +418,12 @@ export default function FeedbackPage() {
             <SelectItem value="0">Dislike</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="default" size="sm" onClick={() => exportData()}>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => exportData()}
+          disabled={isLoading}
+        >
           Export to xlsx
         </Button>
       </div>

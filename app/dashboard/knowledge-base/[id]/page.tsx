@@ -34,7 +34,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-// --- Shadcn Select Component Imports ---
+// --- Shadcn Component Imports ---
 import {
   Select,
   SelectContent,
@@ -42,8 +42,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// NEW: Import components for the modal dialog
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-// --- API Client Imports (including the new enum) ---
+// --- API Client Imports ---
 import {
   apiClient,
   Document,
@@ -63,11 +76,14 @@ export default function KnowledgeBaseDetailPage() {
     {}
   );
   const [tempTags, setTempTags] = useState<{ [key: string]: string }>({});
-  const [urlInput, setUrlInput] = useState("");
-  // -- NEW STATE for managing the selected upload purpose --
   const [uploadPurpose, setUploadPurpose] = useState<DocumentPurpose>(
     DocumentPurpose.KNOWLEDGE_BASE
   );
+
+  // NEW: State for the URL upload modal
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [descriptionInput, setDescriptionInput] = useState("");
 
   // --- Loading and Error States ---
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -78,20 +94,16 @@ export default function KnowledgeBaseDetailPage() {
   }>({});
   const [pageError, setPageError] = useState<string | null>(null);
 
-  // --- Data Fetching and Authorization ---
+  // --- Data Fetching ---
   const loadData = async () => {
-    setIsPageLoading(true);
+    // Reset page-level state on reload, except for loading indicator
     setPageError(null);
     try {
       const kbResponse = await apiClient.knowledgeBases.get(kbId);
-
-      if (
-        kbResponse.status_code !== 200
-      ) {
+      if (kbResponse.status_code !== 200) {
         router.push("/dashboard/knowledge-base");
         return;
       }
-
       setKb(kbResponse.data);
       setDocuments(kbResponse.data.documents || []);
     } catch (error) {
@@ -106,11 +118,12 @@ export default function KnowledgeBaseDetailPage() {
 
   useEffect(() => {
     if (kbId) {
+      setIsPageLoading(true);
       loadData();
     }
   }, [kbId]);
 
-  // --- Document Creation Handlers (Updated with Purpose) ---
+  // --- Document Creation Handlers ---
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -120,7 +133,6 @@ export default function KnowledgeBaseDetailPage() {
     setIsUploading(true);
     try {
       const uploadPromises = Array.from(files).map((file) => {
-        // --- ADD `purpose` to the DTO ---
         const documentDto = JSON.stringify({
           knowledge_base_id: kbId,
           purpose: uploadPurpose,
@@ -138,19 +150,24 @@ export default function KnowledgeBaseDetailPage() {
       alert("Failed to upload one or more documents.");
     } finally {
       setIsUploading(false);
-      event.target.value = "";
+      event.target.value = ""; // Reset file input
     }
   };
 
+  // MODIFIED: This function now handles submission from the modal
   const handleUrlSubmit = async () => {
-    if (!urlInput.trim()) return;
+    if (!urlInput.trim()) {
+      alert("Please enter a valid URL.");
+      return;
+    }
     setIsSubmittingUrl(true);
     try {
-      // --- ADD `purpose` to the DTO ---
+      // MODIFIED: Include the new 'description' field in the DTO
       const documentDto = JSON.stringify({
         knowledge_base_id: kbId,
         url: urlInput,
         purpose: uploadPurpose,
+        description: descriptionInput.trim() || null, // Add description
       });
 
       await apiClient.documents.create({
@@ -158,7 +175,11 @@ export default function KnowledgeBaseDetailPage() {
         file_upload_type: "URL",
       });
       await loadData();
+
+      // NEW: Close modal and reset state on success
+      setIsUrlModalOpen(false);
       setUrlInput("");
+      setDescriptionInput("");
     } catch (error) {
       console.error("Failed to submit URL:", error);
       alert(
@@ -169,7 +190,7 @@ export default function KnowledgeBaseDetailPage() {
     }
   };
 
-  // --- Other handlers remain unchanged ---
+  // --- Other Handlers (unchanged) ---
   const handleDeleteDocument = async (docId: string) => {
     if (
       !confirm(
@@ -205,16 +226,7 @@ export default function KnowledgeBaseDetailPage() {
       await apiClient.documents.update(docId, {
         tags: tagsArray.length > 0 ? tagsArray : null,
       });
-      setDocuments((prev) =>
-        prev.map((file) =>
-          file.id === docId
-            ? {
-                ...file,
-                document_tags: tagsArray.length > 0 ? tagsArray : null,
-              }
-            : file
-        )
-      );
+      await loadData(); // Reload to get fresh data from server
       setEditingTags((prev) => ({ ...prev, [docId]: false }));
     } catch (error) {
       console.error("Error updating tags:", error);
@@ -224,6 +236,7 @@ export default function KnowledgeBaseDetailPage() {
     }
   };
 
+  // --- Utility and Memoization ---
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -241,10 +254,11 @@ export default function KnowledgeBaseDetailPage() {
     [documents]
   );
 
+  // --- Render Logic ---
   if (isPageLoading) {
     return (
       <div className="flex justify-center items-center h-full">
-        <IconLoader className="animate-spin" />
+        <IconLoader className="animate-spin text-primary" size={48} />
       </div>
     );
   }
@@ -261,83 +275,15 @@ export default function KnowledgeBaseDetailPage() {
     );
   }
 
-  // Common UI component for upload controls
-  const UploadControls = ({ type }: { type: "FILE" | "URL" }) => (
-    <div className="flex justify-end gap-2 items-center">
-      <Select
-        value={uploadPurpose}
-        onValueChange={(value) => setUploadPurpose(value as DocumentPurpose)}
-        disabled={isUploading || isSubmittingUrl}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Select purpose" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
-            Knowledge Base
-          </SelectItem>
-          <SelectItem value={DocumentPurpose.ATTACHMENT}>Attachment</SelectItem>
-        </SelectContent>
-      </Select>
-      {type === "FILE" ? (
-        <>
-          <Input
-            type="file"
-            className="max-w-xs"
-            multiple
-            onChange={handleFileUpload}
-            disabled={isUploading}
-          />
-          <Button variant="default" size="sm" disabled={isUploading}>
-            {isUploading ? (
-              <>
-                <IconLoader className="mr-2 h-4 w-4 animate-spin" />{" "}
-                Uploading...
-              </>
-            ) : (
-              "Upload Files"
-            )}
-          </Button>
-        </>
-      ) : (
-        <>
-          <Input
-            type="text"
-            className="max-w-xs"
-            placeholder="Enter article URL"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            disabled={isSubmittingUrl}
-          />
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleUrlSubmit}
-            disabled={isSubmittingUrl}
-          >
-            {isSubmittingUrl ? (
-              <>
-                <IconLoader className="mr-2 h-4 w-4 animate-spin" />{" "}
-                Submitting...
-              </>
-            ) : (
-              "Add URL"
-            )}
-          </Button>
-        </>
-      )}
-    </div>
-  );
-
   return (
     <TooltipProvider>
-      <div className="flex flex-col  p-4 md:gap-6 md:p-10">
+      <div className="flex flex-col p-4 md:gap-6 md:p-10">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.back()}>
             <IconArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="scroll-m-20 text-3xl font-bold tracking-tight text-balance">
+            <h1 className="scroll-m-20 text-3xl font-bold tracking-tight">
               {kb?.name}
             </h1>
             <span className="italic font-light text-sm text-muted-foreground">
@@ -353,11 +299,54 @@ export default function KnowledgeBaseDetailPage() {
             <TabsTrigger value="url">URLs</TabsTrigger>
           </TabsList>
 
+          {/* FILE UPLOAD TAB */}
           <TabsContent
             value="file"
             className="flex flex-col gap-4 md:gap-6 mt-4"
           >
-            <UploadControls type="FILE" />
+            <div className="flex justify-end gap-2 items-center">
+              <Select
+                value={uploadPurpose}
+                onValueChange={(value) =>
+                  setUploadPurpose(value as DocumentPurpose)
+                }
+                disabled={isUploading}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select purpose" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
+                    Knowledge Base
+                  </SelectItem>
+                  <SelectItem value={DocumentPurpose.ATTACHMENT}>
+                    Attachment
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                <Button asChild variant="default">
+                  <label htmlFor="file-upload">
+                    {isUploading ? (
+                      <>
+                        <IconLoader className="mr-2 h-4 w-4 animate-spin" />{" "}
+                        Uploading...
+                      </>
+                    ) : (
+                      "Upload Files"
+                    )}
+                  </label>
+                </Button>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  multiple
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                />
+              </div>
+            </div>
             <Table>
               <TableCaption>A list of your uploaded files.</TableCaption>
               <TableHeader>
@@ -418,7 +407,11 @@ export default function KnowledgeBaseDetailPage() {
                           <div className="flex flex-wrap gap-1 max-w-xs">
                             {file.document_tags?.length ? (
                               file.document_tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="bg-blue-500 text-white dark:bg-blue-600">
+                                <Badge
+                                  key={tag}
+                                  variant="secondary"
+                                  className="bg-blue-500 text-white dark:bg-blue-600"
+                                >
                                   {tag}
                                 </Badge>
                               ))
@@ -476,18 +469,116 @@ export default function KnowledgeBaseDetailPage() {
             </Table>
           </TabsContent>
 
+          {/* URL UPLOAD TAB */}
           <TabsContent
             value="url"
             className="flex flex-col gap-4 md:gap-6 mt-4"
           >
-            <UploadControls type="URL" />
+            {/* NEW: URL Upload Modal Dialog */}
+            <div className="flex justify-end">
+              <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="default">Add URL</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[525px]">
+                  <DialogHeader>
+                    <DialogTitle>Add URL to Knowledge Base</DialogTitle>
+                    <DialogDescription>
+                      Enter a public URL and an optional description. The
+                      content will be fetched and indexed.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="url" className="text-right">
+                        URL
+                      </Label>
+                      <Input
+                        id="url"
+                        value={urlInput}
+                        onChange={(e) => setUrlInput(e.target.value)}
+                        className="col-span-3"
+                        placeholder="https://example.com/article"
+                        disabled={isSubmittingUrl}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                      <Label htmlFor="description" className="text-right pt-2">
+                        Description
+                      </Label>
+                      <Textarea
+                        id="description"
+                        value={descriptionInput}
+                        onChange={(e) => setDescriptionInput(e.target.value)}
+                        className="col-span-3 min-h-[100px]"
+                        placeholder="A brief summary of the URL's content (optional)."
+                        disabled={isSubmittingUrl}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="purpose" className="text-right">
+                        Purpose
+                      </Label>
+                      <Select
+                        value={uploadPurpose}
+                        onValueChange={(value) =>
+                          setUploadPurpose(value as DocumentPurpose)
+                        }
+                        disabled={isSubmittingUrl}
+                      >
+                        <SelectTrigger id="purpose" className="col-span-3">
+                          <SelectValue placeholder="Select purpose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
+                            Knowledge Base
+                          </SelectItem>
+                          <SelectItem value={DocumentPurpose.ATTACHMENT}>
+                            Attachment
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isSubmittingUrl}
+                      >
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                    <Button
+                      type="submit"
+                      onClick={handleUrlSubmit}
+                      disabled={isSubmittingUrl}
+                    >
+                      {isSubmittingUrl ? (
+                        <>
+                          <IconLoader className="mr-2 h-4 w-4 animate-spin" />{" "}
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit URL"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {/* END: URL Upload Modal Dialog */}
+
             <Table>
               <TableCaption>A list of your submitted URLs.</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>File Name</TableHead>
+                  <TableHead>URL / File Name</TableHead>
+                  {/* NEW: Description Column */}
+                  <TableHead>Description</TableHead>
                   <TableHead>Tags</TableHead>
-                  <TableHead>Purpose</TableHead> {/* <-- NEW COLUMN */}
+                  <TableHead>Purpose</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -501,14 +592,28 @@ export default function KnowledgeBaseDetailPage() {
                           <Link
                             href={doc.file_path}
                             target="_blank"
+                            rel="noopener noreferrer"
                             className="text-blue-500 hover:underline"
                           >
                             {doc.file_name || doc.file_path}
                           </Link>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {doc.file_name || doc.file_path}
+                          <p>{doc.file_path}</p>
                         </TooltipContent>
+                      </Tooltip>
+                    </TableCell>
+                    {/* NEW: Description Cell */}
+                    <TableCell className="max-w-xs truncate text-muted-foreground">
+                      <Tooltip>
+                        <TooltipTrigger>
+                          {doc.description || "—"}
+                        </TooltipTrigger>
+                        {doc.description && (
+                          <TooltipContent className="max-w-md">
+                            <p>{doc.description}</p>
+                          </TooltipContent>
+                        )}
                       </Tooltip>
                     </TableCell>
                     <TableCell>

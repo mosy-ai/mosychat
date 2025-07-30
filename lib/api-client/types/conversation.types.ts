@@ -1,3 +1,5 @@
+import { UserResponse } from "./user.types";
+
 // Feedback interfaces
 export interface FeedbackCreateDto {
   id?: string; // Optional on creation
@@ -14,7 +16,10 @@ export interface FeedbackUpdateDto {
 export interface FeedbackResponse {
   id: string;
   message_id: string;
+  message?: MessageResponse | null;
   created_by_id?: string | null;
+  created_by?: UserResponse | null;
+  agent_name?: string | null;
   agent_id?: string | null;
   rating?: number | null;
   comment?: string | null;

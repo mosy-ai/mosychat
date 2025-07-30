@@ -4,7 +4,7 @@ import {
   ThreadListItemPrimitive,
   ThreadListPrimitive,
 } from "@assistant-ui/react";
-import { ArchiveIcon, PlusIcon, Trash2, ChevronDown, ChevronRight,  } from "lucide-react";
+import { PlusIcon, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { IconSelector } from"@tabler/icons-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export const ThreadList: FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex flex-col items-stretch gap-1.5">
+    <div className="flex flex-col items-stretch gap-1.5 overflow-auto h-[calc(100vh-100px)]">
       {/* Mobile Collapsible Version */}
       <div className="md:hidden">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -98,19 +98,5 @@ const ThreadListItemTitle: FC = () => {
     <p className="text-sm">
       <ThreadListItemPrimitive.Title fallback="New Chat" />
     </p>
-  );
-};
-
-const ThreadListItemArchive: FC = () => {
-  return (
-    <ThreadListItemPrimitive.Archive asChild>
-      <TooltipIconButton
-        className="hover:text-primary text-foreground ml-auto mr-3 size-4 p-0"
-        variant="ghost"
-        tooltip="Archive thread"
-      >
-        <ArchiveIcon />
-      </TooltipIconButton>
-    </ThreadListItemPrimitive.Archive>
   );
 };
