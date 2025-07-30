@@ -62,7 +62,6 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
             if (stream) {
               while (true) {
                 const { done, value } = await stream.read();
-                if (done) break;
                 const decoder = new TextDecoder();
                 let chunk = decoder.decode(value, { stream: true });
 
@@ -74,7 +73,7 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
                   part = decodeUnicodeEscapes(part.slice(0, -2));
                   cleared += part;
                 }
-                text += cleared;
+                text += cleared
                 yield {
                   content: [
                     {
@@ -83,6 +82,7 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
                     },
                   ],
                 };
+                if (done) break;
               }
             }
           },

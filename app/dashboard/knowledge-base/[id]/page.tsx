@@ -33,8 +33,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-// --- Shadcn Component Imports ---
 import {
   Select,
   SelectContent,
@@ -42,7 +40,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// NEW: Import components for the modal dialog
 import {
   Dialog,
   DialogContent,
@@ -50,13 +47,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-// --- API Client Imports ---
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   apiClient,
   Document,
@@ -64,39 +59,51 @@ import {
   DocumentPurpose,
 } from "@/lib/api-client";
 
+interface StagedUploadItem {
+  id: string;
+  type: "FILE" | "URL";
+  source: File | string;
+  description: string;
+  tags: string;
+  purpose: DocumentPurpose;
+}
+
+interface PendingUpload {
+  id: string;
+  type: "FILE" | "URL";
+  name: string;
+  purpose: DocumentPurpose;
+  size?: number;
+  status: "UPLOADING" | "ERROR";
+  errorMessage?: string;
+}
+
 export default function KnowledgeBaseDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const kbId = params.id;
 
-  // --- State Management ---
   const [kb, setKb] = useState<KnowledgeBase | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [editingTags, setEditingTags] = useState<{ [key: string]: boolean }>(
     {}
   );
   const [tempTags, setTempTags] = useState<{ [key: string]: string }>({});
-  const [uploadPurpose, setUploadPurpose] = useState<DocumentPurpose>(
-    DocumentPurpose.KNOWLEDGE_BASE
-  );
-
-  // NEW: State for the URL upload modal
-  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
-  const [urlInput, setUrlInput] = useState("");
-  const [descriptionInput, setDescriptionInput] = useState("");
-
-  // --- Loading and Error States ---
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [stagedItems, setStagedItems] = useState<StagedUploadItem[]>([]);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isSubmittingUrl, setIsSubmittingUrl] = useState(false);
   const [tagUpdateLoading, setTagUpdateLoading] = useState<{
     [key: string]: boolean;
   }>({});
   const [pageError, setPageError] = useState<string | null>(null);
 
-  // --- Data Fetching ---
+  const isUploading = useMemo(
+    () => pendingUploads.length > 0,
+    [pendingUploads]
+  );
+
   const loadData = async () => {
-    // Reset page-level state on reload, except for loading indicator
     setPageError(null);
     try {
       const kbResponse = await apiClient.knowledgeBases.get(kbId);
@@ -123,74 +130,113 @@ export default function KnowledgeBaseDetailPage() {
     }
   }, [kbId]);
 
-  // --- Document Creation Handlers ---
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
-    try {
-      const uploadPromises = Array.from(files).map((file) => {
-        const documentDto = JSON.stringify({
-          knowledge_base_id: kbId,
-          purpose: uploadPurpose,
-        });
-        return apiClient.documents.create({
-          document_dto: documentDto,
-          file: file,
-          file_upload_type: "FILE",
-        });
-      });
-      await Promise.all(uploadPromises);
-      await loadData();
-    } catch (error) {
-      console.error("Failed to upload document(s):", error);
-      alert("Failed to upload one or more documents.");
-    } finally {
-      setIsUploading(false);
-      event.target.value = ""; // Reset file input
-    }
+    const newStagedFiles: StagedUploadItem[] = Array.from(files).map(
+      (file) => ({
+        id: `${file.name}-${Date.now()}`,
+        type: "FILE",
+        source: file,
+        description: "",
+        tags: "",
+        purpose: DocumentPurpose.KNOWLEDGE_BASE,
+      })
+    );
+
+    setStagedItems((prev) => [...prev, ...newStagedFiles]);
+    setIsUploadModalOpen(true);
+    event.target.value = "";
   };
 
-  // MODIFIED: This function now handles submission from the modal
-  const handleUrlSubmit = async () => {
-    if (!urlInput.trim()) {
-      alert("Please enter a valid URL.");
-      return;
+  const handleAddUrlClick = () => {
+    const newStagedUrl: StagedUploadItem = {
+      id: `url-${Date.now()}`,
+      type: "URL",
+      source: "",
+      description: "",
+      tags: "",
+      purpose: DocumentPurpose.KNOWLEDGE_BASE,
+    };
+    setStagedItems((prev) => [...prev, newStagedUrl]);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleStagedItemChange = (
+    id: string,
+    field: keyof StagedUploadItem,
+    value: string | DocumentPurpose
+  ) => {
+    setStagedItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleRemoveStagedItem = (id: string) => {
+    setStagedItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  useEffect(() => {
+    if (!isUploadModalOpen) {
+      setStagedItems([]);
     }
-    setIsSubmittingUrl(true);
-    try {
-      // MODIFIED: Include the new 'description' field in the DTO
+  }, [isUploadModalOpen]);
+
+  const handleStartUploads = () => {
+    const itemsToUpload = [...stagedItems];
+    setIsUploadModalOpen(false);
+    setStagedItems([]);
+
+    itemsToUpload.forEach((item) => {
+      const pendingUpload: PendingUpload = {
+        id: item.id,
+        type: item.type,
+        name:
+          item.type === "FILE"
+            ? (item.source as File).name
+            : (item.source as string),
+        purpose: item.purpose,
+        size: item.type === "FILE" ? (item.source as File).size : undefined,
+        status: "UPLOADING",
+      };
+      setPendingUploads((prev) => [...prev, pendingUpload]);
+
+      const tagsArray = (item.tags || "")
+        .split(/,|\s+/)
+        .map((tag) => tag.trim())
+        .filter(Boolean);
       const documentDto = JSON.stringify({
         knowledge_base_id: kbId,
-        url: urlInput,
-        purpose: uploadPurpose,
-        description: descriptionInput.trim() || null, // Add description
+        purpose: item.purpose,
+        description: item.description.trim() || null,
+        tags: tagsArray.length > 0 ? tagsArray : null,
+        ...(item.type === "URL" && { url: item.source }),
       });
 
-      await apiClient.documents.create({
-        document_dto: documentDto,
-        file_upload_type: "URL",
-      });
-      await loadData();
-
-      // NEW: Close modal and reset state on success
-      setIsUrlModalOpen(false);
-      setUrlInput("");
-      setDescriptionInput("");
-    } catch (error) {
-      console.error("Failed to submit URL:", error);
-      alert(
-        "Failed to submit URL. Please ensure it is a valid and accessible link."
-      );
-    } finally {
-      setIsSubmittingUrl(false);
-    }
+      apiClient.documents
+        .create({
+          document_dto: documentDto,
+          file: item.type === "FILE" ? (item.source as File) : undefined,
+          file_upload_type: item.type,
+        })
+        .then((response) => {
+          setDocuments((prev) => [...prev, response.data]);
+          setPendingUploads((prev) => prev.filter((p) => p.id !== item.id));
+        })
+        .catch((error) => {
+          console.error(`Failed to upload ${item.type}:`, error);
+          setPendingUploads((prev) =>
+            prev.map((p) =>
+              p.id === item.id
+                ? { ...p, status: "ERROR", errorMessage: `Upload failed` }
+                : p
+            )
+          );
+        });
+    });
   };
 
-  // --- Other Handlers (unchanged) ---
   const handleDeleteDocument = async (docId: string) => {
     if (
       !confirm(
@@ -226,7 +272,7 @@ export default function KnowledgeBaseDetailPage() {
       await apiClient.documents.update(docId, {
         tags: tagsArray.length > 0 ? tagsArray : null,
       });
-      await loadData(); // Reload to get fresh data from server
+      await loadData();
       setEditingTags((prev) => ({ ...prev, [docId]: false }));
     } catch (error) {
       console.error("Error updating tags:", error);
@@ -236,9 +282,8 @@ export default function KnowledgeBaseDetailPage() {
     }
   };
 
-  // --- Utility and Memoization ---
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
+  const formatFileSize = (bytes: number | undefined) => {
+    if (bytes === undefined || bytes === 0) return "0 Bytes";
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -253,8 +298,15 @@ export default function KnowledgeBaseDetailPage() {
     () => documents.filter((doc) => doc.file_upload_type === "URL"),
     [documents]
   );
+  const pendingFileDocuments = useMemo(
+    () => pendingUploads.filter((p) => p.type === "FILE"),
+    [pendingUploads]
+  );
+  const pendingUrlDocuments = useMemo(
+    () => pendingUploads.filter((p) => p.type === "URL"),
+    [pendingUploads]
+  );
 
-  // --- Render Logic ---
   if (isPageLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -293,44 +345,158 @@ export default function KnowledgeBaseDetailPage() {
         </div>
         <Separator />
 
+        <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+          <DialogContent className="sm:max-w-[800px]">
+            <DialogHeader>
+              <DialogTitle>Prepare Documents for Upload</DialogTitle>
+              <DialogDescription>
+                Add files or URLs. You can edit tags and descriptions for each
+                item before uploading.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-[60vh] p-4 border rounded-md">
+              <div className="grid gap-6">
+                {stagedItems.length === 0 && (
+                  <p className="text-sm text-center text-muted-foreground py-8">
+                    Select files or add a URL to get started.
+                  </p>
+                )}
+                {stagedItems.map((item) => (
+                  <Card key={item.id} className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-7 w-7"
+                      onClick={() => handleRemoveStagedItem(item.id)}
+                    >
+                      <IconX className="h-4 w-4" />
+                    </Button>
+                    <CardHeader>
+                      <CardTitle className="text-lg pr-8 truncate">
+                        {item.type === "FILE"
+                          ? (item.source as File).name
+                          : "URL Details"}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                      {item.type === "URL" && (
+                        <div className="grid gap-2">
+                          <Label htmlFor={`url-${item.id}`}>URL</Label>
+                          <Input
+                            id={`url-${item.id}`}
+                            value={item.source as string}
+                            onChange={(e) =>
+                              handleStagedItemChange(
+                                item.id,
+                                "source",
+                                e.target.value
+                              )
+                            }
+                            placeholder="https://example.com/article"
+                          />
+                        </div>
+                      )}
+                      <div className="grid gap-2">
+                        <Label htmlFor={`desc-${item.id}`}>
+                          Description (optional)
+                        </Label>
+                        <Textarea
+                          id={`desc-${item.id}`}
+                          value={item.description}
+                          onChange={(e) =>
+                            handleStagedItemChange(
+                              item.id,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          className="min-h-[80px]"
+                          placeholder="A brief summary of the content."
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`tags-${item.id}`}>
+                          Tags (comma-separated)
+                        </Label>
+                        <Input
+                          id={`tags-${item.id}`}
+                          value={item.tags}
+                          onChange={(e) =>
+                            handleStagedItemChange(
+                              item.id,
+                              "tags",
+                              e.target.value
+                            )
+                          }
+                          placeholder="e.g. policy, onboarding, v2"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor={`purpose-${item.id}`}>Purpose</Label>
+                        <Select
+                          value={item.purpose}
+                          onValueChange={(value: DocumentPurpose) =>
+                            handleStagedItemChange(item.id, "purpose", value)
+                          }
+                        >
+                          <SelectTrigger id={`purpose-${item.id}`}>
+                            <SelectValue placeholder="Select purpose" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
+                              Knowledge Base
+                            </SelectItem>
+                            <SelectItem value={DocumentPurpose.ATTACHMENT}>
+                              Attachment
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsUploadModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleStartUploads}
+                disabled={
+                  stagedItems.length === 0 ||
+                  stagedItems.some((i) => i.type === "URL" && !i.source)
+                }
+              >
+                {isUploading
+                  ? "Processing..."
+                  : `Confirm & Upload ${stagedItems.length} Item(s)`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Tabs defaultValue="file">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="file">Files</TabsTrigger>
             <TabsTrigger value="url">URLs</TabsTrigger>
           </TabsList>
 
-          {/* FILE UPLOAD TAB */}
           <TabsContent
             value="file"
             className="flex flex-col gap-4 md:gap-6 mt-4"
           >
-            <div className="flex justify-end gap-2 items-center">
-              <Select
-                value={uploadPurpose}
-                onValueChange={(value) =>
-                  setUploadPurpose(value as DocumentPurpose)
-                }
-                disabled={isUploading}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select purpose" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
-                    Knowledge Base
-                  </SelectItem>
-                  <SelectItem value={DocumentPurpose.ATTACHMENT}>
-                    Attachment
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex justify-end">
               <div className="relative">
-                <Button asChild variant="default">
+                <Button asChild variant="default" disabled={isUploading}>
                   <label htmlFor="file-upload">
                     {isUploading ? (
                       <>
-                        <IconLoader className="mr-2 h-4 w-4 animate-spin" />{" "}
-                        Uploading...
+                        <IconLoader className="mr-2 h-4 w-4 animate-spin" /> In
+                        Progress...
                       </>
                     ) : (
                       "Upload Files"
@@ -340,9 +506,9 @@ export default function KnowledgeBaseDetailPage() {
                 <Input
                   id="file-upload"
                   type="file"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="hidden"
                   multiple
-                  onChange={handleFileUpload}
+                  onChange={handleFileSelect}
                   disabled={isUploading}
                 />
               </div>
@@ -360,6 +526,43 @@ export default function KnowledgeBaseDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {pendingFileDocuments.map((upload) => (
+                  <TableRow key={upload.id} className="opacity-60">
+                    <TableCell className="font-medium max-w-xs truncate">
+                      {upload.name}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">—</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{upload.purpose}</Badge>
+                    </TableCell>
+                    <TableCell>{formatFileSize(upload.size)}</TableCell>
+                    <TableCell>
+                      {upload.status === "UPLOADING" ? (
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
+                          <IconLoader className="w-3 h-3 animate-spin" />
+                          Uploading
+                        </Badge>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge variant="destructive">Error</Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>{upload.errorMessage}</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" disabled>
+                        <IconTrash className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {fileDocuments.map((file) => (
                   <TableRow key={file.id}>
                     <TableCell className="font-medium max-w-xs truncate">
@@ -469,113 +672,31 @@ export default function KnowledgeBaseDetailPage() {
             </Table>
           </TabsContent>
 
-          {/* URL UPLOAD TAB */}
           <TabsContent
             value="url"
             className="flex flex-col gap-4 md:gap-6 mt-4"
           >
-            {/* NEW: URL Upload Modal Dialog */}
             <div className="flex justify-end">
-              <Dialog open={isUrlModalOpen} onOpenChange={setIsUrlModalOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="default">Add URL</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[525px]">
-                  <DialogHeader>
-                    <DialogTitle>Add URL to Knowledge Base</DialogTitle>
-                    <DialogDescription>
-                      Enter a public URL and an optional description. The
-                      content will be fetched and indexed.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-6 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="url" className="text-right">
-                        URL
-                      </Label>
-                      <Input
-                        id="url"
-                        value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
-                        className="col-span-3"
-                        placeholder="https://example.com/article"
-                        disabled={isSubmittingUrl}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                      <Label htmlFor="description" className="text-right pt-2">
-                        Description
-                      </Label>
-                      <Textarea
-                        id="description"
-                        value={descriptionInput}
-                        onChange={(e) => setDescriptionInput(e.target.value)}
-                        className="col-span-3 min-h-[100px]"
-                        placeholder="A brief summary of the URL's content (optional)."
-                        disabled={isSubmittingUrl}
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="purpose" className="text-right">
-                        Purpose
-                      </Label>
-                      <Select
-                        value={uploadPurpose}
-                        onValueChange={(value) =>
-                          setUploadPurpose(value as DocumentPurpose)
-                        }
-                        disabled={isSubmittingUrl}
-                      >
-                        <SelectTrigger id="purpose" className="col-span-3">
-                          <SelectValue placeholder="Select purpose" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
-                            Knowledge Base
-                          </SelectItem>
-                          <SelectItem value={DocumentPurpose.ATTACHMENT}>
-                            Attachment
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={isSubmittingUrl}
-                      >
-                        Cancel
-                      </Button>
-                    </DialogClose>
-                    <Button
-                      type="submit"
-                      onClick={handleUrlSubmit}
-                      disabled={isSubmittingUrl}
-                    >
-                      {isSubmittingUrl ? (
-                        <>
-                          <IconLoader className="mr-2 h-4 w-4 animate-spin" />{" "}
-                          Submitting...
-                        </>
-                      ) : (
-                        "Submit URL"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button
+                variant="default"
+                onClick={handleAddUrlClick}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <>
+                    <IconLoader className="mr-2 h-4 w-4 animate-spin" /> In
+                    Progress...
+                  </>
+                ) : (
+                  "Add URL"
+                )}
+              </Button>
             </div>
-            {/* END: URL Upload Modal Dialog */}
-
             <Table>
               <TableCaption>A list of your submitted URLs.</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>URL / File Name</TableHead>
-                  {/* NEW: Description Column */}
                   <TableHead>Description</TableHead>
                   <TableHead>Tags</TableHead>
                   <TableHead>Purpose</TableHead>
@@ -584,6 +705,45 @@ export default function KnowledgeBaseDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {pendingUrlDocuments.map((upload) => (
+                  <TableRow key={upload.id} className="opacity-60">
+                    <TableCell className="font-medium max-w-md truncate">
+                      {upload.name}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">—</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-muted-foreground">—</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{upload.purpose}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {upload.status === "UPLOADING" ? (
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
+                          <IconLoader className="w-3 h-3 animate-spin" />
+                          Processing
+                        </Badge>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Badge variant="destructive">Error</Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>{upload.errorMessage}</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" disabled>
+                        <IconTrash className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {urlDocuments.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium max-w-md truncate">
@@ -603,11 +763,14 @@ export default function KnowledgeBaseDetailPage() {
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
-                    {/* NEW: Description Cell */}
-                    <TableCell className="max-w-xs truncate text-muted-foreground">
+                    <TableCell className="max-w-xs text-muted-foreground">
                       <Tooltip>
                         <TooltipTrigger>
-                          {doc.description || "—"}
+                          {doc.description
+                            ? doc.description.length > 100
+                              ? `${doc.description.slice(0, 100)}...`
+                              : doc.description
+                            : "—"}
                         </TooltipTrigger>
                         {doc.description && (
                           <TooltipContent className="max-w-md">
