@@ -43,20 +43,39 @@ import { FeedbackPopup } from "@/components/mosy-ui/feedback-popup";
 import { useAgentStore } from "@/store/agentStore";
 
 import rehypeRaw from "rehype-raw";
-import rehypeStringify from "rehype-stringify";
+import rehypeReact from "rehype-react";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
-import { rehypeCustomTags } from '@/lib/rehype-custom-tags'
+import { rehypeCustomTags } from "@/lib/rehype-custom-tags";
 import { unified } from "unified";
+import { PhotoView, PhotoProvider } from "react-photo-view";
+import React, { type JSX } from "react";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import "react-photo-view/dist/react-photo-view.css";
+
+const ImageWithPreview = (props: JSX.IntrinsicElements["img"]) => {
+  const { alt = "", ...rest } = props;
+  return (
+    <PhotoView src={rest.src as string}>
+      <img alt={alt} {...rest} />
+    </PhotoView>
+  );
+};
 
 const processor = unified()
   .use(remarkParse)
+  .use(remarkGfm)
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
-  .use(rehypeStringify)
   .use(rehypeCustomTags)
-  .use(remarkGfm);
+  .use(rehypeReact, {
+    createElement: React.createElement,
+    components: { img: ImageWithPreview },
+    Fragment,
+    jsx,
+    jsxs,
+  });
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
@@ -178,7 +197,6 @@ const UserMessage: FC = () => {
 };
 
 const AssistantMessage: FC = () => {
-  const selectedAgent = useAgentStore((state) => state.selectedAgent);
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
       <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
@@ -186,7 +204,7 @@ const AssistantMessage: FC = () => {
           <div className="size-8 rounded-full bg-muted flex items-center justify-center">
             <IconUser />
           </div>
-          <p className="text-sm text-muted-foreground">{selectedAgent?.name}</p>
+          <p className="text-sm text-muted-foreground">Mosy Agent</p>
         </div>
         <MessagePrimitive.Content
           components={{
@@ -241,23 +259,16 @@ const AssistantMessage: FC = () => {
               </>
             ),
             Text: ({ type, text }) => {
-              const [html, setHtml] = useState<string>("");
+              const [content, setContent] = useState<React.ReactNode>(null);
 
               useEffect(() => {
                 (async () => {
-                  const file = await processor.process(text);
-                  setHtml(String(file));
+                  const compiled = await processor.process(text);
+                  setContent(compiled.result);
                 })();
               }, [text]);
 
-              return (
-                html && (
-                  <div
-                    className="mosy-style"
-                    dangerouslySetInnerHTML={{ __html: html }}
-                  />
-                )
-              );
+              return content && <PhotoProvider>{content}</PhotoProvider>;
             },
           }}
         />

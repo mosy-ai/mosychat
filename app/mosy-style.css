@@ -37,6 +37,13 @@
 
 .mosy-style li {
   margin: 0.25em 0;
+  list-style-type: none;
+}
+
+.mosy-style li::before {
+  content: "- ";
+  margin-left: -1.5em;
+  margin-right: 0.5em;
 }
 
 .mosy-style a {
