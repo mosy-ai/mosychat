@@ -11,7 +11,6 @@ export class BaseApiClient {
 
   setToken(token: string) {
     this.token = token;
-    console.log("Token set in BaseApiClient");
   }
 
   getHeaders(isFormData: boolean = false): Record<string, string> {

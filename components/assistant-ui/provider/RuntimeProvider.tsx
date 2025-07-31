@@ -13,8 +13,8 @@ import {
   CompositeAttachmentAdapter,
 } from "@assistant-ui/react";
 import { apiClient } from "@/lib/api-client";
-import { AgentProvider, useAgent } from "@/context/AgentContext";
 import UniversalAttachmentAdapter from "@/components/assistant-ui/provider/AllDocumentsAttachmentAdapter";
+import { useAgentStore } from "@/store/agentStore";
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
@@ -24,8 +24,7 @@ const feedbackAdapter: FeedbackAdapter = {
   },
 };
 
-export function RuntimeCore({ children }: { children: React.ReactNode }) {
-  const { selectedAgent } = useAgent();
+export function RuntimeProvider({ children }: { children: React.ReactNode }) {
   const refRemoteId = useRef("");
   const runtime = useRemoteThreadListRuntime({
     runtimeHook: () =>
@@ -33,8 +32,7 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
         {
           async *run({ messages }) {
             while (!refRemoteId.current) {
-              console.warn("Waiting for threadId to be set...");
-              await new Promise((resolve) => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, 1));
             }
             const payload = {
               messages: messages.map((msg) => ({
@@ -73,12 +71,12 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
                   part = decodeUnicodeEscapes(part.slice(0, -2));
                   cleared += part;
                 }
-                text += cleared
+                text += cleared;
                 yield {
                   content: [
                     {
                       type: "text",
-                      text: text.replace(/<thinking>[\s\S]*?<\/thinking>/g, ""),
+                      text: text,
                     },
                   ],
                 };
@@ -96,6 +94,7 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
           },
         }
       ),
+
     adapter: {
       async list() {
         const res = await apiClient.conversations.list();
@@ -110,10 +109,10 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
 
       async initialize(_threadId: string) {
         const threadId = uuidv5(_threadId, NAMESPACE);
-        apiClient.conversations.create({
-          title: "New Chat",
+        await apiClient.conversations.create({
           id: threadId,
-          agent_id: selectedAgent?.id || "",
+          agent_id: useAgentStore.getState().selectedAgent?.id || "",
+          title: "",
         });
         refRemoteId.current = threadId;
         return { remoteId: threadId, externalId: threadId };
@@ -136,7 +135,11 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
         if (title) {
           await apiClient.conversations.update(remoteId, { title });
         }
-        return new ReadableStream();
+        return new ReadableStream({
+          start(controller) {
+            controller.close();
+          },
+        });
       },
 
       async archive(remoteId: string) {
@@ -190,10 +193,7 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
                       content: [
                         {
                           type: "text",
-                          text: m.content.replace(
-                            /<thinking>[\s\S]*?<\/thinking>/g,
-                            ""
-                          ),
+                          text: m.content,
                         },
                       ],
                       attachments: m.attachments,
@@ -218,19 +218,11 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
                       refRemoteId.current || uuidv5(threadId, NAMESPACE),
                     attachments: newMessage.attachments,
                     role: newMessage.role,
-                    content:
-                      newMessage.content[0]?.text.replace(
-                        /<thinking>[\s\S]*?<\/thinking>/g,
-                        ""
-                      ) || "",
+                    content: newMessage.content[0]?.text || "",
                   });
                 } catch (error) {
                   await apiClient.conversations.updateMessage(newMessage.id, {
-                    content:
-                      newMessage.content[0]?.text.replace(
-                        /<thinking>[\s\S]*?<\/thinking>/g,
-                        ""
-                      ) || "",
+                    content: newMessage.content[0]?.text || "",
                   });
                   if (retryCount < maxRetries) {
                     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -259,17 +251,10 @@ export function RuntimeCore({ children }: { children: React.ReactNode }) {
   });
 
   return (
+    <>
       <AssistantRuntimeProvider runtime={runtime}>
         {children}
       </AssistantRuntimeProvider>
-  );
-}
-
-
-export function RuntimeProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <AgentProvider>
-      <RuntimeCore>{children}</RuntimeCore>
-    </AgentProvider>
+    </>
   );
 }

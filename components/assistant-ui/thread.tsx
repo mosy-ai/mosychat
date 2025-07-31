@@ -1,13 +1,5 @@
 import { v5 as uuidv5, NIL } from "uuid";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"; // Make sure you have the Select component from shadcn/ui
-import { useAgent } from "@/context/AgentContext";
-import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
   ComposerPrimitive,
@@ -17,13 +9,22 @@ import {
   useMessage,
   useMessageRuntime,
 } from "@assistant-ui/react";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 import {
   ComposerAttachments,
   ComposerAddAttachment,
   UserMessageAttachments,
 } from "@/components/assistant-ui/attachment";
 import type { FC } from "react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -34,14 +35,26 @@ import {
   ThumbsUpIcon,
   ThumbsDownIcon,
 } from "lucide-react";
-import { 
-  IconUser,
- } from "@tabler/icons-react";
+import { IconUser } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api-client";
-import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import { apiClient, AgentResponse } from "@/lib/api-client";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { FeedbackPopup } from "@/components/mosy-ui/feedback-popup";
+import { useAgentStore } from "@/store/agentStore";
+
+import rehypeRaw from "rehype-raw";
+import rehypeStringify from "rehype-stringify";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import remarkRehype from "remark-rehype";
+import { unified } from "unified";
+
+const processor = unified()
+  .use(remarkParse)
+  .use(remarkRehype, { allowDangerousHtml: true })
+  .use(rehypeRaw)
+  .use(rehypeStringify)
+  .use(remarkGfm);
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
 
@@ -55,7 +68,6 @@ export const Thread: FC = () => {
     >
       <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-y-scroll scroll-smooth bg-inherit px-4 pt-8">
         <ThreadWelcome />
-
         <ThreadPrimitive.Messages
           components={{
             UserMessage: UserMessage,
@@ -96,7 +108,9 @@ const ThreadWelcome: FC = () => {
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
         <div className="flex w-full flex-grow flex-col items-center justify-center gap-4">
           <p className="text-lg font-medium">How can I help you today?</p>
-          <p className="text-sm text-muted-foreground">Select your agent here:</p>
+          <p className="text-sm text-muted-foreground">
+            Select an agent to get started.
+          </p>
           <AgentSelector />
         </div>
       </div>
@@ -110,8 +124,8 @@ const Composer: FC = () => {
       <ComposerAttachments />
       <ComposerAddAttachment />
       <ComposerPrimitive.Input
-        rows={1}
         autoFocus
+        rows={1}
         placeholder="Write a message..."
         className="placeholder:text-muted-foreground max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed"
       />
@@ -162,7 +176,7 @@ const UserMessage: FC = () => {
 };
 
 const AssistantMessage: FC = () => {
-  const { selectedAgent } = useAgent();
+  const selectedAgent = useAgentStore((state) => state.selectedAgent);
   return (
     <MessagePrimitive.Root className="grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] relative w-full max-w-[var(--thread-max-width)] py-4">
       <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7 col-span-2 col-start-2 row-start-1 my-1.5">
@@ -170,11 +184,81 @@ const AssistantMessage: FC = () => {
           <div className="size-8 rounded-full bg-muted flex items-center justify-center">
             <IconUser />
           </div>
-          <p className="text-sm text-muted-foreground">
-            {selectedAgent?.name} {selectedAgent?.description}
-          </p>
+          <p className="text-sm text-muted-foreground">{selectedAgent?.name}</p>
         </div>
-        <MessagePrimitive.Content components={{ Text: MarkdownText }} />
+        <MessagePrimitive.Content
+          components={{
+            Empty: () => (
+              <>
+                <div className="flex items-center gap-2 py-4">
+                  <svg
+                    className="animate-spin h-5 w-5 text-muted-foreground"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    ></path>
+                  </svg>
+                  <div className="flex flex-col items-start">
+                    {(() => {
+                      const sentences = ["Thinking", "Searching", "Handling"];
+                      const [index, setIndex] = useState(0);
+                      const [dots, setDots] = useState(1);
+
+                      useEffect(() => {
+                        const interval = setInterval(() => {
+                          setDots((prev) => {
+                            if (prev < 2) return prev + 1;
+                            setIndex((i) => (i + 1) % sentences.length);
+                            return 1;
+                          });
+                        }, 1000);
+                        return () => clearInterval(interval);
+                      }, []);
+
+                      return (
+                        <p className="text-xs text-muted-foreground/70 animate-pulse">
+                          {sentences[index]}.{".".repeat(dots)}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </>
+            ),
+            Text: ({ type, text }) => {
+              const [html, setHtml] = useState<string>("");
+
+              useEffect(() => {
+                (async () => {
+                  const file = await processor.process(text);
+                  setHtml(String(file));
+                })();
+              }, [text]);
+
+              return (
+                html && (
+                  <div
+                    className="mosy-style"
+                    dangerouslySetInnerHTML={{ __html: html }}
+                  />
+                )
+              );
+            },
+          }}
+        />
         <MessageError />
       </div>
       <AssistantActionBar />
@@ -319,34 +403,61 @@ const CircleStopIcon = () => {
 };
 
 const AgentSelector: FC = () => {
-  const { agents, selectedAgent, setSelectedAgent, isLoading } = useAgent();
+  // --- FIX APPLIED HERE ---
+  // Select each piece of state individually to avoid creating new objects on every render.
+  const selectedAgent = useAgentStore((state) => state.selectedAgent);
+  const setSelectedAgent = useAgentStore((state) => state.setSelectedAgent);
+  // --- END OF FIX ---
 
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading agents...</p>;
-  }
-  
-  if (!agents.length) {
-    return <p className="text-sm text-muted-foreground">No agents available.</p>
-  }
+  const [agents, setAgents] = useState<AgentResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    apiClient.agents
+      .list()
+      .then((res) => {
+        const agentData = res.data || [];
+        setAgents(agentData);
+        if (!selectedAgent && agentData.length > 0) {
+          setSelectedAgent(agentData[0]);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch agents:", err))
+      .finally(() => setIsLoading(false));
+  }, []); // This effect correctly runs only once.
+
+  const handleValueChange = (agentId: string) => {
+    const agentToSelect = agents.find((agent) => agent.id === agentId);
+    if (agentToSelect) {
+      setSelectedAgent(agentToSelect);
+    }
+  };
 
   return (
-    
-    <div className="w-full max-w-xs">
-      <Select
-        value={selectedAgent?.id ?? ""}
-        onValueChange={(value) => setSelectedAgent(agents.find((agent) => agent.id === value) || null)}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select an agent..." />
-        </SelectTrigger>
-        <SelectContent>
-          {agents.map((agent) => (
+    <Select
+      value={selectedAgent?.id || ""}
+      onValueChange={handleValueChange}
+      disabled={isLoading}
+    >
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder="Select an agent..." />
+      </SelectTrigger>
+      <SelectContent>
+        {isLoading ? (
+          <SelectItem value="loading" disabled>
+            Loading agents...
+          </SelectItem>
+        ) : (
+          agents.map((agent) => (
             <SelectItem key={agent.id} value={agent.id}>
-              {agent.name} {agent.description}
+              {agent.name}
             </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+          ))
+        )}
+      </SelectContent>
+    </Select>
   );
 };
+
+export default AgentSelector;

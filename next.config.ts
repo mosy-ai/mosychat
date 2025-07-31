@@ -2,7 +2,7 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  reactStrictMode: true,
+  reactStrictMode: false,
   webpack: (config, { webpack }) => {
     config.experiments = { 
       ...config.experiments, 
