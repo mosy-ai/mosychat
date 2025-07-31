@@ -47,6 +47,7 @@ import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
+import { rehypeCustomTags } from '@/lib/rehype-custom-tags'
 import { unified } from "unified";
 
 const processor = unified()
@@ -54,6 +55,7 @@ const processor = unified()
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
   .use(rehypeStringify)
+  .use(rehypeCustomTags)
   .use(remarkGfm);
 
 const NAMESPACE = process.env.NEXT_PUBLIC_NAMESPACE || NIL;
