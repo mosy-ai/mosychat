@@ -31,19 +31,30 @@
 
 .mosy-style ul,
 .mosy-style ol {
-  padding-left: 1.5em;
+  display: table;
+  border-collapse: collapse;
   margin: 1em 0;
+  width: 100%;
 }
 
 .mosy-style li {
-  margin: 0.25em 0;
-  list-style-type: none;
+  display: table-row;
+  margin: 0;
 }
 
 .mosy-style li::before {
-  content: "- ";
-  margin-left: -1.5em;
-  margin-right: 0.5em;
+  content: "";
+  display: table-cell;
+  width: 1.5em;
+  padding-right: 0.5em;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mosy-style li::after {
+  content: "";
+  display: table-cell;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .mosy-style a {

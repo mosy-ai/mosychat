@@ -153,9 +153,17 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
         const threadListItem = useThreadListItem();
         const remoteId = threadListItem.remoteId;
         const threadId = threadListItem.id;
+        const isMain = threadListItem.isMain;
+
         useEffect(() => {
-          refRemoteId.current = remoteId || "";
-        }, [remoteId]);
+          if (isMain) {
+            if (remoteId) {
+              refRemoteId.current = remoteId
+            } else {
+              refRemoteId.current = uuidv5(threadId, NAMESPACE)
+            }
+          } 
+        }, [isMain]);
         // Message history adapter for each thread
         const history = useMemo<ThreadHistoryAdapter>(
           () => ({
@@ -214,14 +222,17 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                 try {
                   await apiClient.conversations.createMessage({
                     id: uuidv5(newMessage.id || NIL, NAMESPACE),
-                    conversation_id:
-                      refRemoteId.current || uuidv5(threadId, NAMESPACE),
+                    conversation_id: refRemoteId.current,
                     attachments: newMessage.attachments,
                     role: newMessage.role,
                     content: newMessage.content[0]?.text || "",
                   });
                 } catch (error) {
-                  await apiClient.conversations.updateMessage(newMessage.id, {
+                  await apiClient.conversations.createMessage({
+                    id: uuidv5(newMessage.id || NIL, NAMESPACE),
+                    conversation_id: refRemoteId.current,
+                    attachments: newMessage.attachments,
+                    role: newMessage.role,
                     content: newMessage.content[0]?.text || "",
                   });
                   if (retryCount < maxRetries) {
