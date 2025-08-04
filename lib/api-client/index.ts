@@ -5,6 +5,7 @@ import { ConversationService } from '@/lib/api-client/services/conversation.serv
 import { DocumentService } from '@/lib/api-client/services/document.service';
 import { GroupService } from '@/lib/api-client/services/group.service';
 import { KnowledgeBaseService } from '@/lib/api-client/services/knowledgeBase.service';
+import { TagService } from '@/lib/api-client/services/tag.service';
 import { UserService } from '@/lib/api-client/services/user.service';
 
 export * from '@/lib/api-client/types/agent.types';
@@ -14,6 +15,7 @@ export * from '@/lib/api-client/types/conversation.types';
 export * from '@/lib/api-client/types/document.types';
 export * from '@/lib/api-client/types/group.types';
 export * from '@/lib/api-client/types/knowledgeBase.types';
+export * from '@/lib/api-client/types/tag.types';
 export * from '@/lib/api-client/types/user.types';
 
 class ApiClient {
@@ -26,6 +28,7 @@ class ApiClient {
   public knowledgeBases: KnowledgeBaseService;
   public agents: AgentService;
   public conversations: ConversationService;
+  public tags: TagService;
 
   constructor() {
     this.baseClient = new BaseApiClient();
@@ -36,6 +39,7 @@ class ApiClient {
     this.knowledgeBases = new KnowledgeBaseService(this.baseClient);
     this.agents = new AgentService(this.baseClient);
     this.conversations = new ConversationService(this.baseClient);
+    this.tags = new TagService(this.baseClient);
   }
 
   public setToken(token: string): void {

@@ -86,7 +86,10 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavAdminPanel items={data.adminPanel} />
+        {
+          user?.role === "ADMIN" && <NavAdminPanel items={data.adminPanel} />
+        }
+        
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user as { name: string; email: string }} />
