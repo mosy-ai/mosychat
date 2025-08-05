@@ -114,10 +114,10 @@ export function DocumentTable({
                       <Input
                         value={tempTags[doc.id] || ""}
                         onChange={(e) =>
-                          setTempTags((prev) => ({
-                            ...prev,
+                          setTempTags({
+                            ...tempTags,
                             [doc.id]: e.target.value,
-                          }))
+                          })
                         }
                         disabled={tagUpdateLoading[doc.id]}
                       />

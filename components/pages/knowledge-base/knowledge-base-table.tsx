@@ -34,7 +34,7 @@ export function KnowledgeBaseTable({
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
-          <TableHead>Description</TableHead>
+          
           <TableHead>Documents</TableHead>
           <TableHead>Users</TableHead>
           <TableHead>Groups</TableHead>
@@ -52,17 +52,15 @@ export function KnowledgeBaseTable({
                 {kb.name}
               </Link>
             </TableCell>
-            <TableCell className="max-w-xs truncate">
-              {kb.description || "—"}
-            </TableCell>
+            
             <TableCell>
               <Badge variant="outline">{kb.document_count || 0}</Badge>
             </TableCell>
             <TableCell>
-              <Badge variant="outline">{kb.user_count || 0}</Badge>
+              <Badge variant="outline">{kb.users?.length || 0}</Badge>
             </TableCell>
             <TableCell>
-              <Badge variant="outline">{kb.group_count || 0}</Badge>
+              <Badge variant="outline">{kb.groups?.length || 0}</Badge>
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">

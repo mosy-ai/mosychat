@@ -91,7 +91,7 @@ export function MultiSelectDialog<T extends { id: string; name: string | null }>
                 <TableRow>
                   <TableHead></TableHead>
                   <TableHead>Name</TableHead>
-                  {items[0]?.email && <TableHead>Email</TableHead>}
+                  
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,7 +104,7 @@ export function MultiSelectDialog<T extends { id: string; name: string | null }>
                       />
                     </TableCell>
                     <TableCell>{item.name}</TableCell>
-                    {item.email && <TableCell>{item.email}</TableCell>}
+                    
                   </TableRow>
                 ))}
               </TableBody>

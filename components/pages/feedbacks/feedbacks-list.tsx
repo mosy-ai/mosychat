@@ -27,7 +27,16 @@ export function FeedbacksList() {
     state: {
       pagination,
     },
-    onPaginationChange: handlePaginationChange,
+    onPaginationChange: (updaterOrValue) => {
+      // updaterOrValue can be a value or an updater function
+      if (typeof updaterOrValue === "function") {
+        // If it's a function, call it with the current pagination to get the new value
+        handlePaginationChange(updaterOrValue(pagination));
+      } else {
+        // If it's a value, just pass it along
+        handlePaginationChange(updaterOrValue);
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
   });

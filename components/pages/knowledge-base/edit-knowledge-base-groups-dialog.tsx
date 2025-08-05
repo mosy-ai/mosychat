@@ -59,7 +59,12 @@ export function EditKnowledgeBaseGroupsDialog({ kb, open, onOpenChange, onSucces
     setIsSaving(true);
     try {
       // Update knowledge base groups
-      await apiClient.knowledgeBases.updateGroups(kb.id, selectedGroupIds);
+      await apiClient.knowledgeBases.update(
+        kb.id,
+        {
+          group_ids: selectedGroupIds,
+        }
+      )
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {

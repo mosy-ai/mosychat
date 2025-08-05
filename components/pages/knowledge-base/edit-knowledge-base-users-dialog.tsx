@@ -59,7 +59,12 @@ export function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess
     setIsSaving(true);
     try {
       // Update knowledge base users
-      await apiClient.knowledgeBases.updateUsers(kb.id, selectedUserIds);
+      await apiClient.knowledgeBases.update(
+        kb.id,
+        {
+          user_ids: selectedUserIds,
+        }
+      );
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
