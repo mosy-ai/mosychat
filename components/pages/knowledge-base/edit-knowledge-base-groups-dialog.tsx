@@ -35,8 +35,7 @@ export function EditKnowledgeBaseGroupsDialog({ kb, open, onOpenChange, onSucces
         try {
           const response = await apiClient.groups.list();
           setGroups(response.data || []);
-          // Initialize with current groups (you might need to fetch current groups for this KB)
-          setSelectedGroupIds([]); // This should be populated with current groups
+          setSelectedGroupIds(kb.groups?.map(group => group.id) || []);
         } catch (err: any) {
           console.error("Failed to fetch groups:", err);
         } finally {

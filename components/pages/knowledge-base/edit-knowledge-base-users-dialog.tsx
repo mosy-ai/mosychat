@@ -35,8 +35,7 @@ export function EditKnowledgeBaseUsersDialog({ kb, open, onOpenChange, onSuccess
         try {
           const response = await apiClient.users.list();
           setUsers(response.data || []);
-          // Initialize with current users (you might need to fetch current users for this KB)
-          setSelectedUserIds([]); // This should be populated with current users
+          setSelectedUserIds(kb.users?.map(user => user.id) || []);
         } catch (err: any) {
           console.error("Failed to fetch users:", err);
         } finally {
