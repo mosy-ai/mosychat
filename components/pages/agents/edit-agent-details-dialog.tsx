@@ -26,7 +26,7 @@ export function EditAgentDetailsDialog({ agent, open, onOpenChange, onSuccess }:
       await apiClient.agents.update(agent.id, { name, description });
       onSuccess();
     } catch (err: any) {
-      setError(err.message || "An unknown error occurred.");
+      setError(err.message || "Đã xảy ra lỗi không xác định.");
     } finally {
       setIsSubmitting(false);
     }
@@ -36,18 +36,18 @@ export function EditAgentDetailsDialog({ agent, open, onOpenChange, onSuccess }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Agent Details</DialogTitle>
+          <DialogTitle>Chỉnh sửa chi tiết Agent</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Agent Name"
+            placeholder="Tên Agent"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Agent Description"
+            placeholder="Mô tả Agent"
             className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -56,7 +56,7 @@ export function EditAgentDetailsDialog({ agent, open, onOpenChange, onSuccess }:
           disabled={isSubmitting}
           className="w-full"
         >
-          {isSubmitting ? "Saving..." : "Save Changes"}
+          {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
         </Button>
         {error && (
           <Alert variant="destructive">

@@ -26,10 +26,10 @@ export default function Login() {
         document.cookie = `access_token=${response.access_token}; path=/; samesite=lax`;
         router.push("/dashboard");
       } else {
-        setError("Invalid email or password");
+        setError("Email hoặc mật khẩu không hợp lệ");
       }
     } catch (err) {
-      setError("Failed to sign in. Please try again.");
+      setError("Đăng nhập thất bại. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl">Sign in to ChatMosyAI</CardTitle>
+          <CardTitle className="text-3xl">Đăng nhập vào ChatViettelAI</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={handleSubmit}>
@@ -61,7 +61,7 @@ export default function Login() {
                   name="password"
                   type="password"
                   required
-                  placeholder="Password"
+                  placeholder="Mật khẩu"
                   value={password}
                   onChange={(e) => setPassword(e.target.value.trim())}
                 />
@@ -73,7 +73,7 @@ export default function Login() {
               </Alert>
             )}
             <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
           </form>
         </CardContent>

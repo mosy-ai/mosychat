@@ -30,7 +30,7 @@ export const ThreadList: FC = () => {
             >
               <span className="flex items-center gap-2">
                 <IconSelector className="h-4 w-4" />
-                Threads
+                Cuộc trò chuyện
               </span>
               {isOpen ? (
                 <ChevronDown className="h-4 w-4" />
@@ -70,7 +70,7 @@ const ThreadListNew: FC = () => {
     <ThreadListPrimitive.New asChild>
       <Button className="data-[active]:bg-muted hover:bg-muted flex items-center justify-start gap-1 rounded-lg px-2.5 py-2 text-start flex-shrink-0" variant="ghost">
         <PlusIcon className="h-4 w-4" />
-        New Thread
+        Cuộc trò chuyện mới
       </Button>
     </ThreadListPrimitive.New>
   );
@@ -94,7 +94,7 @@ const ThreadListItem: FC = () => {
         <TooltipIconButton
           className="hover:text-destructive text-foreground ml-auto mr-3 size-4 p-0 flex-shrink-0"
           variant="ghost"
-          tooltip="Delete thread"
+          tooltip="Xóa cuộc trò chuyện"
         >
           <Trash2 />
         </TooltipIconButton>
@@ -106,7 +106,7 @@ const ThreadListItem: FC = () => {
 const ThreadListItemTitle: FC = () => {
   return (
     <p className="text-sm truncate">
-      <ThreadListItemPrimitive.Title fallback="New Chat" />
+      <ThreadListItemPrimitive.Title fallback="Trò chuyện mới" />
     </p>
   );
 };

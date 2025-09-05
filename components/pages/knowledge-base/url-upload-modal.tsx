@@ -44,10 +44,10 @@ export function UrlUploadModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconGlobe className="h-5 w-5" />
-            Prepare URLs for Upload
+            Chuẩn bị URLs để tải lên
           </DialogTitle>
           <DialogDescription>
-            Add URLs and configure metadata for each one. You can edit tags and descriptions for each URL.
+            Thêm URLs và cấu hình thông tin cho từng cái. Bạn có thể chỉnh sửa thẻ và mô tả cho từng URL.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] p-4 border rounded-md">
@@ -56,7 +56,7 @@ export function UrlUploadModal({
               <div className="text-center py-8">
                 <IconLink className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-sm text-muted-foreground">
-                  No URLs added. Click "Add URL" to get started.
+                  Chưa có URL nào được thêm. Nhấp "Thêm URL" để bắt đầu.
                 </p>
               </div>
             )}
@@ -81,7 +81,7 @@ export function UrlUploadModal({
                   <CardHeader>
                     <CardTitle className="text-lg pr-8 flex items-center gap-2">
                       <IconLink className="h-4 w-4" />
-                      <span>URL Details</span>
+                      <span>Chi tiết URL</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-4">
@@ -99,7 +99,7 @@ export function UrlUploadModal({
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor={`desc-${item.id}`}>
-                        Description (optional)
+                        Mô tả (tùy chọn)
                       </Label>
                       <Textarea
                         id={`desc-${item.id}`}
@@ -108,25 +108,25 @@ export function UrlUploadModal({
                           onStagedItemChange(item.id, "description", e.target.value)
                         }
                         className="min-h-[80px]"
-                        placeholder="A brief summary of the content at this URL."
+                        placeholder="Tóm tắt ngắn gọn về nội dung tại URL này."
                       />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor={`tags-${item.id}`}>
-                        Tags (type and press space to create badges)
+                        Thẻ (gõ và nhấn khoảng trắng để tạo thẻ)
                       </Label>
                       <TagInput
                         value={item.tags}
                         onChange={(value) => onStagedItemChange(item.id, "tags", value)}
                         suggestions={suggestions}
-                        placeholder="Type tags and press space..."
+                        placeholder="Gõ thẻ và nhấn khoảng trắng..."
                         disabled={isUploading}
                         isLoadingTags={isLoadingTags}
                         tagLoadError={tagLoadError}
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor={`purpose-${item.id}`}>Purpose</Label>
+                      <Label htmlFor={`purpose-${item.id}`}>Mục đích</Label>
                       <Select
                         value={item.purpose}
                         onValueChange={(value: DocumentPurpose) =>
@@ -134,14 +134,14 @@ export function UrlUploadModal({
                         }
                       >
                         <SelectTrigger id={`purpose-${item.id}`}>
-                          <SelectValue placeholder="Select purpose" />
+                          <SelectValue placeholder="Chọn mục đích" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
-                            Knowledge Base
+                            Cơ sở tri thức
                           </SelectItem>
                           <SelectItem value={DocumentPurpose.ATTACHMENT}>
-                            Attachment
+Đính kèm
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -160,11 +160,11 @@ export function UrlUploadModal({
             className="flex items-center gap-2"
           >
             <IconPlus className="h-4 w-4" />
-            Add Another URL
+            Thêm URL khác
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={onStartUrlUploads}
@@ -175,8 +175,8 @@ export function UrlUploadModal({
               }
             >
               {isUploading
-                ? "Processing URLs..."
-                : `Add ${stagedUrls.length} URL${stagedUrls.length !== 1 ? 's' : ''}`}
+                ? "Đang xử lý URLs..."
+                : `Thêm ${stagedUrls.length} URL`}
             </Button>
           </div>
         </DialogFooter>

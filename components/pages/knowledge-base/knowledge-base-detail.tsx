@@ -132,7 +132,7 @@ export function KnowledgeBaseDetail() {
 
       <Tabs defaultValue="file">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="file">Files</TabsTrigger>
+          <TabsTrigger value="file">Tập tin</TabsTrigger>
           <TabsTrigger value="url">URLs</TabsTrigger>
         </TabsList>
 
@@ -147,10 +147,10 @@ export function KnowledgeBaseDetail() {
                   {isUploading ? (
                     <>
                       <IconLoader className="mr-2 h-4 w-4 animate-spin" /> In
-                      Progress...
+Đang xử lý...
                     </>
                   ) : (
-                    "Upload Files"
+"Tải lên tập tin"
                   )}
                 </label>
               </Button>

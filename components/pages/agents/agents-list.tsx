@@ -40,7 +40,7 @@ export function AgentsList() {
   } = useAgents();
 
   if (isLoading) {
-    return <div className="p-6">Loading agents...</div>;
+    return <div className="p-6">Đang tải agents...</div>;
   }
 
   if (error) {
@@ -67,7 +67,7 @@ export function AgentsList() {
             onClick={() => setIsAddDialogOpen(true)}
           >
             <IconPlus className="w-4 h-4 mr-2" />
-            Create Agent
+            Tạo Agent
           </Button>
         </div>
         <AgentsTable

@@ -6,8 +6,8 @@ export function EditAgentGroupsDialog(props: EditAgentGroupsDialogProps) {
   return (
     <MultiSelectDialog<GroupResponse>
       {...props}
-      title={`Manage Groups for Agent: ${props.agent.name}`}
-      description="Select the groups that can be associated with this agent."
+      title={`Quản lý nhóm cho Agent: ${props.agent.name}`}
+      description="Chọn các nhóm có thể liên kết với agent này."
       itemTypeName="group"
       fetchItems={() => apiClient.groups.list({ limit: 1000 })}
       onSave={(agentId, group_ids) => apiClient.agents.update(agentId, { group_ids })}

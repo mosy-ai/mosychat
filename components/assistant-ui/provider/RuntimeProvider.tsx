@@ -143,11 +143,11 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
       },
 
       async archive(remoteId: string) {
-        console.warn("Archiving is not implemented in this adapter.");
+        console.warn("Lưu trữ chưa được triển khai trong adapter này.");
       },
 
       async unarchive(remoteId: string) {
-        console.warn("Unarchiving is not implemented in this adapter.");
+        console.warn("Hủy lưu trữ chưa được triển khai trong adapter này.");
       },
       unstable_Provider: ({ children }) => {
         const threadListItem = useThreadListItem();
@@ -240,7 +240,7 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
                     return retryWithCount(retryCount + 1);
                   }
                   throw new Error(
-                    `Failed to append message after ${maxRetries} retries`
+                    `Không thể thêm tin nhắn sau ${maxRetries} lần thử lại`
                   );
                 }
               };

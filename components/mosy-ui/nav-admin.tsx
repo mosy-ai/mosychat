@@ -20,7 +20,7 @@ export function NavAdminPanel({
 }) {
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Admin Panel</SidebarGroupLabel>
+      <SidebarGroupLabel>Bảng quản trị</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>

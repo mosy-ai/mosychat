@@ -35,7 +35,7 @@ export function AddKnowledgeBaseDialog({ open, onOpenChange, onSuccess }: Dialog
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
-      alert(err.message || "Failed to create knowledge base.");
+      alert(err.message || "Tạo cơ sở tri thức thất bại.");
     } finally {
       setIsLoading(false);
     }
@@ -45,28 +45,28 @@ export function AddKnowledgeBaseDialog({ open, onOpenChange, onSuccess }: Dialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Knowledge Base</DialogTitle>
+          <DialogTitle>Tạo cơ sở tri thức mới</DialogTitle>
           <DialogDescription>
-            Enter the details for your new knowledge base.
+            Nhập thông tin chi tiết cho cơ sở tri thức mới của bạn.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="name">Tên *</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter knowledge base name"
+              placeholder="Nhập tên cơ sở tri thức"
             />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Hủy
           </Button>
           <Button onClick={handleCreate} disabled={!name.trim() || isLoading}>
-            {isLoading ? "Creating..." : "Create"}
+            {isLoading ? "Đang tạo..." : "Tạo"}
           </Button>
         </DialogFooter>
       </DialogContent>

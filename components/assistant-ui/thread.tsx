@@ -113,7 +113,7 @@ const ThreadScrollToBottom: FC = () => {
   return (
     <ThreadPrimitive.ScrollToBottom asChild>
       <TooltipIconButton
-        tooltip="Scroll to bottom"
+        tooltip="Cuộn xuống cuối"
         variant="outline"
         className="absolute -top-8 rounded-full disabled:invisible"
       >
@@ -128,9 +128,9 @@ const ThreadWelcome: FC = () => {
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
         <div className="flex w-full flex-grow flex-col items-center justify-center gap-4">
-          <p className="text-lg font-medium">How can I help you today?</p>
+          <p className="text-lg font-medium">Hôm nay tôi có thể giúp gì cho bạn?</p>
           <p className="text-sm text-muted-foreground">
-            Select an agent to get started.
+            Chọn một agent để bắt đầu.
           </p>
           <AgentSelector />
         </div>
@@ -147,7 +147,7 @@ const Composer: FC = () => {
       <ComposerPrimitive.Input
         autoFocus
         rows={1}
-        placeholder="Write a message..."
+        placeholder="Viết tin nhắn..."
         className="placeholder:text-muted-foreground max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed"
       />
       <ComposerAction />
@@ -161,7 +161,7 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <TooltipIconButton
-            tooltip="Send"
+            tooltip="Gửi"
             variant="default"
             className="my-2.5 size-8 p-2 transition-opacity ease-in"
           >
@@ -172,7 +172,7 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
           <TooltipIconButton
-            tooltip="Cancel"
+            tooltip="Hủy"
             variant="default"
             className="my-2.5 size-8 p-2 transition-opacity ease-in"
           >
@@ -204,7 +204,7 @@ const AssistantMessage: FC = () => {
           <div className="size-8 rounded-full bg-muted flex items-center justify-center">
             <IconUser />
           </div>
-          <p className="text-sm text-muted-foreground">Mosy Agent</p>
+          <p className="text-sm text-muted-foreground">Viettel Agent</p>
         </div>
         <MessagePrimitive.Content
           components={{
@@ -233,7 +233,7 @@ const AssistantMessage: FC = () => {
                   </svg>
                   <div className="flex flex-col items-start">
                     {(() => {
-                      const sentences = ["Thinking", "Searching", "Handling"];
+                      const sentences = ["Đang suy nghĩ", "Đang tìm kiếm", "Đang xử lý"];
                       const [index, setIndex] = useState(0);
                       const [dots, setDots] = useState(1);
 
@@ -317,7 +317,7 @@ const AssistantActionBar: FC = () => {
         setFeedbackPopupOpen(false);
         setFeedbackType("positive"); // Reset to default after submission
       } catch (error) {
-        console.error("Error submitting feedback:", error);
+        console.error("Lỗi khi gửi phản hồi:", error);
       }
     },
     [messageRuntime, feedbackType]
@@ -336,7 +336,7 @@ const AssistantActionBar: FC = () => {
         className="text-muted-foreground flex gap-1 col-start-3 row-start-2 -ml-1 data-[floating]:bg-background data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
       >
         <ActionBarPrimitive.Copy asChild>
-          <TooltipIconButton tooltip="Copy">
+          <TooltipIconButton tooltip="Sao chép">
             <MessagePrimitive.If copied>
               <CheckIcon />
             </MessagePrimitive.If>
@@ -348,13 +348,13 @@ const AssistantActionBar: FC = () => {
 
         {/* Custom feedback buttons that open popup */}
         <TooltipIconButton
-          tooltip="Like"
+          tooltip="Thích"
           onClick={() => handleFeedbackClick("positive")}
         >
           <ThumbsUpIcon />
         </TooltipIconButton>
         <TooltipIconButton
-          tooltip="Dislike"
+          tooltip="Không thích"
           onClick={() => handleFeedbackClick("negative")}
         >
           <ThumbsDownIcon />
@@ -385,7 +385,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
       {...rest}
     >
       <BranchPickerPrimitive.Previous asChild>
-        <TooltipIconButton tooltip="Previous">
+        <TooltipIconButton tooltip="Trước">
           <ChevronLeftIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Previous>
@@ -393,7 +393,7 @@ const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
         <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
       </span>
       <BranchPickerPrimitive.Next asChild>
-        <TooltipIconButton tooltip="Next">
+        <TooltipIconButton tooltip="Tiếp theo">
           <ChevronRightIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Next>
@@ -436,7 +436,7 @@ const AgentSelector: FC = () => {
           setSelectedAgent(agentData[0]);
         }
       })
-      .catch((err) => console.error("Failed to fetch agents:", err))
+      .catch((err) => console.error("Không thể tải agents:", err))
       .finally(() => setIsLoading(false));
   }, []); // This effect correctly runs only once.
 
@@ -454,12 +454,12 @@ const AgentSelector: FC = () => {
       disabled={isLoading}
     >
       <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Select an agent..." />
+        <SelectValue placeholder="Chọn một agent..." />
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
           <SelectItem value="loading" disabled>
-            Loading agents...
+Đang tải agents...
           </SelectItem>
         ) : (
           agents.map((agent) => (

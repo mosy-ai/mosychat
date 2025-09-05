@@ -6,8 +6,8 @@ export function EditAgentKBsDialog(props: EditAgentKBsDialogProps) {
   return (
     <MultiSelectDialog<KnowledgeBase>
       {...props}
-      title={`Manage Knowledge Bases for Agent: ${props.agent.name}`}
-      description="Select the knowledge bases this agent can access."
+      title={`Quản lý cơ sở tri thức cho Agent: ${props.agent.name}`}
+      description="Chọn các cơ sở tri thức mà agent này có thể truy cập."
       itemTypeName="knowledge_base"
       fetchItems={() => apiClient.knowledgeBases.list({ limit: 1000 })}
       onSave={(agentId, knowledge_base_ids) => apiClient.agents.update(agentId, { knowledge_base_ids })}

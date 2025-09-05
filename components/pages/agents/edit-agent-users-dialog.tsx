@@ -6,8 +6,8 @@ export function EditAgentUsersDialog(props: EditAgentUsersDialogProps) {
   return (
     <MultiSelectDialog<UserResponse>
       {...props}
-      title={`Manage Users for Agent: ${props.agent.name}`}
-      description="Select the users that can be associated with this agent."
+      title={`Quản lý người dùng cho Agent: ${props.agent.name}`}
+      description="Chọn các người dùng có thể liên kết với agent này."
       itemTypeName="user"
       fetchItems={() => apiClient.users.list({ size: 1000 })}
       onSave={(agentId, user_ids) => apiClient.agents.update(agentId, { user_ids })}

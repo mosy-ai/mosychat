@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ChatMosy",
+  title: "Chat",
   description:
-    "MosyAI helps you get answers, find inspiration and be more productive. It is free to use and easy to try. Just ask and ChatMosyAI can help with writing, learning, brainstorming and more.",
+    "Viettel helps you get answers, find inspiration and be more productive. It is free to use and easy to try. Just ask and Viettel can help with writing, learning, brainstorming and more.",
 };
 
 export default function RootLayout({

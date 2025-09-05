@@ -116,7 +116,7 @@ export function MultiSelectDialog<T extends { id: string; name: string | null }>
           disabled={isLoading || isSubmitting}
           className="w-full"
         >
-          {isSubmitting ? "Saving..." : `Save ${itemTypeName}s`}
+          {isSubmitting ? "Đang lưu..." : `Lưu ${itemTypeName}s`}
         </Button>
         {error && (
           <Alert variant="destructive">

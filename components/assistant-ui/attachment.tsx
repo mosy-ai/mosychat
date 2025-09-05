@@ -96,7 +96,7 @@ const AttachmentPreviewDialog: FC<PropsWithChildren> = ({ children }) => {
       </DialogTrigger>
       <AttachmentDialogContent>
         <DialogTitle className="aui-sr-only">
-          Image Attachment Preview
+          Xem trước đính kèm hình ảnh
         </DialogTitle>
         <AttachmentPreview src={src} />
       </AttachmentDialogContent>
@@ -123,11 +123,11 @@ const AttachmentUI: FC = () => {
     const type = a.type;
     switch (type) {
       case "image":
-        return "Image";
+        return "Hình ảnh";
       case "document":
-        return "Document";
+        return "Tài liệu";
       case "file":
-        return "File";
+        return "Tập tin";
       default:
         const _exhaustiveCheck: never = type;
         throw new Error(`Unknown attachment type: ${_exhaustiveCheck}`);
@@ -162,7 +162,7 @@ const AttachmentRemove: FC = () => {
   return (
     <AttachmentPrimitive.Remove asChild>
       <TooltipIconButton
-        tooltip="Remove file"
+        tooltip="Xóa tập tin"
         className="text-muted-foreground [&>svg]:bg-background absolute -right-3 -top-3 size-6 [&>svg]:size-4 [&>svg]:rounded-full"
         side="top"
       >
@@ -195,7 +195,7 @@ export const ComposerAddAttachment: FC = () => {
     <ComposerPrimitive.AddAttachment asChild>
       <TooltipIconButton
         className="my-2.5 size-8 p-2 transition-opacity ease-in"
-        tooltip="Add Attachment"
+        tooltip="Thêm đính kèm"
         variant="ghost"
       >
         <PaperclipIcon />

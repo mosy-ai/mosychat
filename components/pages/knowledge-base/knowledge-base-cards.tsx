@@ -37,7 +37,7 @@ export function KnowledgeBaseCards({
                   </Link>
                 </CardTitle>
                 <CardDescription className="mt-1.5 text-xs text-muted-foreground">
-                  Created {new Date(kb.created_at).toLocaleDateString()}
+                  Được tạo {new Date(kb.created_at).toLocaleDateString()}
                 </CardDescription>
               </div>
             </div>
@@ -68,7 +68,7 @@ export function KnowledgeBaseCards({
                   size="sm"
                   onClick={() => onEditDetails(kb)}
                   className="h-7 w-7 p-0 hover:bg-accent/50"
-                  title="Edit Details"
+                  title="Chỉnh sửa chi tiết"
                 >
                   <IconPencil className="w-3.5 h-3.5" />
                 </Button>
@@ -77,7 +77,7 @@ export function KnowledgeBaseCards({
                   size="sm"
                   onClick={() => onEditUsers(kb)}
                   className="h-7 w-7 p-0 hover:bg-accent/50"
-                  title="Edit Users"
+                  title="Chỉnh sửa người dùng"
                 >
                   <IconUsers className="w-3.5 h-3.5" />
                 </Button>
@@ -86,7 +86,7 @@ export function KnowledgeBaseCards({
                   size="sm"
                   onClick={() => onEditGroups(kb)}
                   className="h-7 w-7 p-0 hover:bg-accent/50"
-                  title="Edit Groups"
+                  title="Chỉnh sửa nhóm"
                 >
                   <IconUsersGroup className="w-3.5 h-3.5" />
                 </Button>
@@ -96,7 +96,7 @@ export function KnowledgeBaseCards({
                 size="sm"
                 onClick={() => onDelete(kb.id)}
                 className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                title="Delete Knowledge Base"
+                title="Xóa cơ sở tri thức"
               >
                 <IconTrash className="w-3.5 h-3.5" />
               </Button>

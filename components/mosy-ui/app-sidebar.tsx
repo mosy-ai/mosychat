@@ -25,12 +25,12 @@ import Image from "next/image";
 const data = {
   navMain: [
     {
-      name: "Chat Mosy",
+      name: "Chat Viettel",
       url: "/dashboard",
       icon: IconMessage2,
     },
     {
-      name: "Knowledge Base",
+      name: "Cơ sở tri thức",
       url: "/dashboard/knowledge-base",
       icon: IconDatabase,
     },
@@ -42,17 +42,17 @@ const data = {
       icon: IconRobot,
     },
     {
-      name: "Users",
+      name: "Người dùng",
       url: "/dashboard/users",
       icon: IconUsers,
     },
     {
-      name: "Groups",
+      name: "Nhóm",
       url: "/dashboard/groups",
       icon: IconUsersGroup,
     },
     {
-      name: "Feedback",
+      name: "Phản hồi",
       url: "/dashboard/feedbacks",
       icon: IconHeart,
     },
@@ -73,12 +73,12 @@ export function AppSidebar({
             >
               <a href="#">
                 <Image
-                  src="/Mosy-Light.png"
+                  src="/viettel-cx-logo.webp"
                   alt="Logo"
                   width={32}
                   height={32}
                 />
-                <span className="text-base font-semibold">Mosy Inc.</span>
+                <span className="text-base font-semibold">Viettel</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

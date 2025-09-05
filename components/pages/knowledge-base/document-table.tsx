@@ -54,15 +54,15 @@ export function DocumentTable({
     <div className="space-y-4">
       <TooltipProvider>
         <Table>
-          <TableCaption>A list of your uploaded documents.</TableCaption>
+          <TableCaption>Danh sách các tài liệu đã tải lên của bạn.</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Filename</TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Tên tập tin</TableHead>
+              <TableHead>Thẻ</TableHead>
+              <TableHead>Mục đích</TableHead>
+              <TableHead>Kích thước</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -82,12 +82,12 @@ export function DocumentTable({
                   {upload.status === "UPLOADING" ? (
                     <Badge variant="outline" className="flex items-center gap-1">
                       <IconLoader className="w-3 h-3 animate-spin" />
-                      Uploading
+Đang tải lên
                     </Badge>
                   ) : (
                     <Tooltip>
                       <TooltipTrigger>
-                        <Badge variant="destructive">Error</Badge>
+                        <Badge variant="destructive">Lỗi</Badge>
                       </TooltipTrigger>
                       <TooltipContent>{upload.errorMessage}</TooltipContent>
                     </Tooltip>

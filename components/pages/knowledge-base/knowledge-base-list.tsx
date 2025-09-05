@@ -52,13 +52,13 @@ export function KnowledgeBaseList() {
   return (
     <div className="flex flex-col p-4 md:gap-6 md:p-10">
       <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-        Knowledge Bases
+        Cơ sở tri thức
       </h1>
       <Separator />
       <div className="flex justify-end">
         <Button variant="default" size="sm" onClick={() => setIsAddDialogOpen(true)}>
           <IconPlus className="w-4 h-4 mr-2" />
-          Create New Knowledge Base
+          Tạo cơ sở tri thức mới
         </Button>
       </div>
 

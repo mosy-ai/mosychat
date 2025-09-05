@@ -207,16 +207,16 @@ class UniversalAttachmentAdapter implements AttachmentAdapter {
     const config = this.supportedTypes[file.type];
     
     if (!config) {
-      throw new Error(`Unsupported file type: ${file.type}`);
+      throw new Error(`Loại tập tin không được hỗ trợ: ${file.type}`);
     }
 
     if (file.size > config.maxSize) {
       const maxSizeMB = Math.round(config.maxSize / (1024 * 1024));
-      throw new Error(`${config.description} size exceeds ${maxSizeMB}MB limit`);
+      throw new Error(`Kích thước ${config.description} vượt quá giới hạn ${maxSizeMB}MB`);
     }
 
     if (file.size === 0) {
-      throw new Error("File is empty");
+      throw new Error("Tập tin trống");
     }
 
     return {
@@ -252,7 +252,7 @@ class UniversalAttachmentAdapter implements AttachmentAdapter {
         status: { type: "complete" },
       };
     } catch (error) {
-      throw new Error(`Failed to process ${attachment.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Không thể xử lý ${attachment.name}: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`);
     }
   }
 

@@ -14,15 +14,15 @@ import { AgentsListProps } from "./types";
 export function AgentsTable({ agents, onDeleteAgent, onEditAgent, onEditUsers, onEditGroups, onEditKBs }: AgentsListProps) {
   return (
     <Table>
-      <TableCaption>A list of agents. Found {agents.length} agents.</TableCaption>
+      <TableCaption>Danh sách agents. Tìm thấy {agents.length} agents.</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Ownership</TableHead>
-          <TableHead>Users</TableHead>
-          <TableHead>Groups</TableHead>
-          <TableHead>KBs</TableHead>
-          <TableHead className="text-right">Functions</TableHead>
+          <TableHead>Tên</TableHead>
+          <TableHead>Chủ sở hữu</TableHead>
+          <TableHead>Người dùng</TableHead>
+          <TableHead>Nhóm</TableHead>
+          <TableHead>Cơ sở tri thức</TableHead>
+          <TableHead className="text-right">Chức năng</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

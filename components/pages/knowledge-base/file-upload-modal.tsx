@@ -50,10 +50,10 @@ export function FileUploadModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconUpload className="h-5 w-5" />
-            Prepare Files for Upload
+            Chuẩn bị tập tin để tải lên
           </DialogTitle>
           <DialogDescription>
-            Configure metadata for each file before uploading. You can edit tags and descriptions for each file.
+            Cấu hình thông tin cho mỗi tập tin trước khi tải lên. Bạn có thể chỉnh sửa thẻ và mô tả cho từng tập tin.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] p-4 border rounded-md">
@@ -62,7 +62,7 @@ export function FileUploadModal({
               <div className="text-center py-8">
                 <IconFile className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-sm text-muted-foreground">
-                  No files selected. Please select files to upload.
+                  Không có tập tin nào được chọn. Vui lòng chọn tập tin để tải lên.
                 </p>
               </div>
             )}
@@ -92,13 +92,13 @@ export function FileUploadModal({
                       </span>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Size: {formatFileSize((item.source as File).size)}
+                      Kích thước: {formatFileSize((item.source as File).size)}
                     </p>
                   </CardHeader>
                   <CardContent className="grid gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor={`desc-${item.id}`}>
-                        Description (optional)
+                        Mô tả (tùy chọn)
                       </Label>
                       <Textarea
                         id={`desc-${item.id}`}
@@ -107,25 +107,25 @@ export function FileUploadModal({
                           onStagedItemChange(item.id, "description", e.target.value)
                         }
                         className="min-h-[80px]"
-                        placeholder="A brief summary of the file content."
+                        placeholder="Tóm tắt ngắn gọn về nội dung tập tin."
                       />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor={`tags-${item.id}`}>
-                        Tags (type and press space to create badges)
+                        Thẻ (gõ và nhấn khoảng trắng để tạo thẻ)
                       </Label>
                       <TagInput
                         value={item.tags}
                         onChange={(value) => onStagedItemChange(item.id, "tags", value)}
                         suggestions={suggestions}
-                        placeholder="Type tags and press space..."
+                        placeholder="Gõ thẻ và nhấn khoảng trắng..."
                         disabled={isUploading}
                         isLoadingTags={isLoadingTags}
                         tagLoadError={tagLoadError}
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor={`purpose-${item.id}`}>Purpose</Label>
+                      <Label htmlFor={`purpose-${item.id}`}>Mục đích</Label>
                       <Select
                         value={item.purpose}
                         onValueChange={(value: DocumentPurpose) =>
@@ -133,14 +133,14 @@ export function FileUploadModal({
                         }
                       >
                         <SelectTrigger id={`purpose-${item.id}`}>
-                          <SelectValue placeholder="Select purpose" />
+                          <SelectValue placeholder="Chọn mục đích" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={DocumentPurpose.KNOWLEDGE_BASE}>
-                            Knowledge Base
+                            Cơ sở tri thức
                           </SelectItem>
                           <SelectItem value={DocumentPurpose.ATTACHMENT}>
-                            Attachment
+                            Đính kèm
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -153,15 +153,15 @@ export function FileUploadModal({
         </ScrollArea>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={onStartFileUploads}
             disabled={stagedFiles.length === 0 || isUploading}
           >
             {isUploading
-              ? "Uploading Files..."
-              : `Upload ${stagedFiles.length} File${stagedFiles.length !== 1 ? 's' : ''}`}
+              ? "Đang tải lên tập tin..."
+              : `Tải lên ${stagedFiles.length} tập tin`}
           </Button>
         </DialogFooter>
       </DialogContent>

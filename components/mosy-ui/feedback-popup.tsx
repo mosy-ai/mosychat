@@ -50,18 +50,18 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {feedbackType === "positive" ? "👍 Positive" : "👎 Negative"} Feedback
+            {feedbackType === "positive" ? "👍 Tích cực" : "👎 Tiêu cực"} Phản hồi
           </DialogTitle>
           <DialogDescription>
             {feedbackType === "positive"
-              ? "What did you like about this response?"
-              : "What could be improved about this response?"}
+              ? "Bạn thích điều gì về phản hồi này?"
+              : "Điều gì có thể được cải thiện trong phản hồi này?"}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="comment">
-              Comment {feedbackType === "negative" ? "(Required)" : "(Optional)"}
+              Bình luận {feedbackType === "negative" ? "(Bắt buộc)" : "(Tùy chọn)"}
             </Label>
             <Textarea
               id="comment"
@@ -69,8 +69,8 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
               onChange={(e) => setComment(e.target.value)}
               placeholder={
                 feedbackType === "positive"
-                  ? "Tell us what you liked..."
-                  : "Tell us how we can improve..."
+                  ? "Hãy cho chúng tôi biết bạn thích điều gì..."
+                  : "Hãy cho chúng tôi biết cách chúng tôi có thể cải thiện..."
               }
               className="resize-none"
               rows={4}
@@ -79,7 +79,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={handleSubmit}
@@ -88,7 +88,7 @@ export const FeedbackPopup: React.FC<FeedbackPopupProps> = ({
               (feedbackType === "negative" && comment.trim() === "")
             }
           >
-            {isSubmitting ? "Submitting..." : "Submit Feedback"}
+            {isSubmitting ? "Đang gửi..." : "Gửi phản hồi"}
           </Button>
         </DialogFooter>
       </DialogContent>

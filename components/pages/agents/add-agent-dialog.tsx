@@ -29,7 +29,7 @@ export function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAgentDialog
       setName("");
       setDescription("");
     } catch (err: any) {
-      setError(err.message || "An unknown error occurred.");
+      setError(err.message || "Đã xảy ra lỗi không xác định.");
     } finally {
       setIsSubmitting(false);
     }
@@ -49,18 +49,18 @@ export function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAgentDialog
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Agent</DialogTitle>
+          <DialogTitle>Tạo Agent mới</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Agent Name"
+            placeholder="Tên Agent"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Agent Description"
+            placeholder="Mô tả Agent"
             className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
@@ -69,7 +69,7 @@ export function AddAgentDialog({ open, onOpenChange, onSuccess }: AddAgentDialog
           disabled={!name.trim() || !description.trim() || isSubmitting}
           className="w-full"
         >
-          {isSubmitting ? "Creating..." : "Create Agent"}
+          {isSubmitting ? "Đang tạo..." : "Tạo Agent"}
         </Button>
         {error && (
           <Alert variant="destructive">

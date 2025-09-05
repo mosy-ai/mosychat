@@ -35,7 +35,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     setError(null);
     setSuccess(false);
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Mật khẩu không khớp");
       return;
     }
     setLoading(true);
@@ -57,7 +57,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
       setConfirmPassword("");
       
     } catch (e: any) {
-      setError(e.message || "Failed to create user");
+      setError(e.message || "Tạo người dùng thất bại");
     } finally {
       setLoading(false);
     }
@@ -81,10 +81,10 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
-          <DialogDescription>Create a new user account</DialogDescription>
+          <DialogTitle>Thêm người dùng</DialogTitle>
+          <DialogDescription>Tạo tài khoản người dùng mới</DialogDescription>
           <div className="grid w-full max-w-sm items-center gap-2 py-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Tên</Label>
             <Input
               type="text"
               id="name"
@@ -104,19 +104,19 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
             />
           </div>
           <div className="grid w-full max-w-sm items-center gap-2 py-2">
-            <Label htmlFor="role">Role</Label>
+            <Label htmlFor="role">Vai trò</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Theme" />
+                <SelectValue placeholder="Chọn vai trò" />
               </SelectTrigger>
               <SelectContent id="role">
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="USER">User</SelectItem>
+                <SelectItem value="ADMIN">Quản trị viên</SelectItem>
+                <SelectItem value="USER">Người dùng</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid w-full max-w-sm items-center gap-2 py-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Mật khẩu</Label>
             <Input
               type="password"
               id="password"
@@ -126,7 +126,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
             />
           </div>
           <div className="grid w-full max-w-sm items-center gap-2 py-2">
-            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <Label htmlFor="confirm-password">Xác nhận mật khẩu</Label>
             <Input
               type="password"
               id="confirm-password"
@@ -141,7 +141,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? "Creating..." : "Create User"}
+            {loading ? "Đang tạo..." : "Tạo người dùng"}
           </Button>
           {error && (
             <Alert variant="destructive">
@@ -152,7 +152,7 @@ export function AddUserDialog({ open, onOpenChange, onSuccess }: AddUserDialogPr
           {success && (
             <Alert variant="default">
               <IconCircleCheck className="w-4 h-4" />
-              <AlertDescription>User created successfully!</AlertDescription>
+              <AlertDescription>Tạo người dùng thành công!</AlertDescription>
             </Alert>
           )}
         </DialogHeader>
